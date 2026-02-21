@@ -1,0 +1,210 @@
+kotlin version: 2.0.21
+error message: org.jetbrains.kotlin.backend.common.BackendException: Backend Internal error: Exception during IR lowering
+File being compiled: C:/Users/alesa/StudioProjects/trial2/app/src/main/java/com/example/trial2/ui/screens/RouteResultScreen.kt
+The root cause java.lang.RuntimeException was thrown at: org.jetbrains.kotlin.backend.jvm.codegen.FunctionCodegen.generate(FunctionCodegen.kt:47)
+	at org.jetbrains.kotlin.backend.common.CodegenUtil.reportBackendException(CodegenUtil.kt:253)
+	at org.jetbrains.kotlin.backend.common.CodegenUtil.reportBackendException$default(CodegenUtil.kt:236)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invokeSequential(performByIrFile.kt:65)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invoke(performByIrFile.kt:52)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invoke(performByIrFile.kt:38)
+	at org.jetbrains.kotlin.backend.common.phaser.NamedCompilerPhase.phaseBody(CompilerPhase.kt:166)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.CompositePhase.invoke(PhaseBuilders.kt:27)
+	at org.jetbrains.kotlin.backend.common.phaser.CompositePhase.invoke(PhaseBuilders.kt:14)
+	at org.jetbrains.kotlin.backend.common.phaser.NamedCompilerPhase.phaseBody(CompilerPhase.kt:166)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.CompilerPhaseKt.invokeToplevel(CompilerPhase.kt:62)
+	at org.jetbrains.kotlin.backend.jvm.JvmIrCodegenFactory.invokeCodegen(JvmIrCodegenFactory.kt:371)
+	at org.jetbrains.kotlin.codegen.CodegenFactory.generateModule(CodegenFactory.kt:47)
+	at org.jetbrains.kotlin.backend.jvm.JvmIrCodegenFactory.generateModuleInFrontendIRMode(JvmIrCodegenFactory.kt:433)
+	at org.jetbrains.kotlin.cli.jvm.compiler.pipeline.JvmCompilerPipelineKt.generateCodeFromIr(jvmCompilerPipeline.kt:246)
+	at org.jetbrains.kotlin.cli.jvm.compiler.pipeline.JvmCompilerPipelineKt.compileModulesUsingFrontendIrAndLightTree(jvmCompilerPipeline.kt:142)
+	at org.jetbrains.kotlin.cli.jvm.K2JVMCompiler.doExecute(K2JVMCompiler.kt:148)
+	at org.jetbrains.kotlin.cli.jvm.K2JVMCompiler.doExecute(K2JVMCompiler.kt:43)
+	at org.jetbrains.kotlin.cli.common.CLICompiler.execImpl(CLICompiler.kt:103)
+	at org.jetbrains.kotlin.cli.common.CLICompiler.execImpl(CLICompiler.kt:49)
+	at org.jetbrains.kotlin.cli.common.CLITool.exec(CLITool.kt:101)
+	at org.jetbrains.kotlin.incremental.IncrementalJvmCompilerRunner.runCompiler(IncrementalJvmCompilerRunner.kt:464)
+	at org.jetbrains.kotlin.incremental.IncrementalJvmCompilerRunner.runCompiler(IncrementalJvmCompilerRunner.kt:73)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.doCompile(IncrementalCompilerRunner.kt:506)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compileImpl(IncrementalCompilerRunner.kt:423)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.tryCompileIncrementally$lambda$9$compile(IncrementalCompilerRunner.kt:249)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.tryCompileIncrementally(IncrementalCompilerRunner.kt:267)
+	at org.jetbrains.kotlin.incremental.IncrementalCompilerRunner.compile(IncrementalCompilerRunner.kt:120)
+	at org.jetbrains.kotlin.daemon.CompileServiceImplBase.execIncrementalCompiler(CompileServiceImpl.kt:675)
+	at org.jetbrains.kotlin.daemon.CompileServiceImplBase.access$execIncrementalCompiler(CompileServiceImpl.kt:92)
+	at org.jetbrains.kotlin.daemon.CompileServiceImpl.compile(CompileServiceImpl.kt:1660)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at java.rmi/sun.rmi.server.UnicastServerRef.dispatch(Unknown Source)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Unknown Source)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Unknown Source)
+	at java.base/java.security.AccessController.doPrivileged(Unknown Source)
+	at java.rmi/sun.rmi.transport.Transport.serviceCall(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport.handleMessages(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run0(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.lambda$run$0(Unknown Source)
+	at java.base/java.security.AccessController.doPrivileged(Unknown Source)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at java.base/java.lang.Thread.run(Unknown Source)
+Caused by: java.lang.RuntimeException: Exception while generating code for:
+FUN name:setupMap visibility:private modality:FINAL <> (mapView:com.yandex.mapkit.mapview.MapView, route:com.trail2.ai_route.GeneratedRoute, context:android.content.Context) returnType:kotlin.Unit
+  VALUE_PARAMETER name:mapView index:0 type:com.yandex.mapkit.mapview.MapView
+  VALUE_PARAMETER name:route index:1 type:com.trail2.ai_route.GeneratedRoute
+  VALUE_PARAMETER name:context index:2 type:android.content.Context
+  BLOCK_BODY
+    VAR name:map type:com.yandex.mapkit.map.Map [val]
+      BLOCK type=com.yandex.mapkit.map.Map origin=null
+        VAR IR_TEMPORARY_VARIABLE name:tmp0 type:kotlin.Any? [val]
+          CALL 'public abstract fun getMap (): @[EnhancedNullability] com.yandex.mapkit.map.Map declared in com.yandex.mapkit.map.MapWindow' type=@[EnhancedNullability] com.yandex.mapkit.map.Map origin=GET_PROPERTY
+            $this: CALL 'public open fun getMapWindow (): @[FlexibleNullability] com.yandex.mapkit.map.MapWindow? declared in com.yandex.mapkit.mapview.MapView' type=@[FlexibleNullability] com.yandex.mapkit.map.MapWindow? origin=GET_PROPERTY
+              $this: GET_VAR 'mapView: com.yandex.mapkit.mapview.MapView declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.yandex.mapkit.mapview.MapView origin=null
+        CALL 'public final fun checkNotNullExpressionValue (value: kotlin.Any?, expression: kotlin.String): kotlin.Unit declared in kotlin.jvm.internal.Intrinsics' type=kotlin.Unit origin=null
+          value: GET_VAR 'val tmp0: kotlin.Any? [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=kotlin.Any? origin=null
+          expression: CONST String type=kotlin.String value="getMap(...)"
+        GET_VAR 'val tmp0: kotlin.Any? [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=kotlin.Any? origin=null
+    CALL 'public abstract fun clear (): kotlin.Unit [fake_override] declared in com.yandex.mapkit.map.MapObjectCollection' type=kotlin.Unit origin=null
+      $this: CALL 'public abstract fun getMapObjects (): @[EnhancedNullability] com.yandex.mapkit.map.MapObjectCollection declared in com.yandex.mapkit.map.Map' type=@[EnhancedNullability] com.yandex.mapkit.map.MapObjectCollection origin=GET_PROPERTY
+        $this: GET_VAR 'val map: com.yandex.mapkit.map.Map [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.yandex.mapkit.map.Map origin=null
+    WHEN type=kotlin.Unit origin=IF
+      BRANCH
+        if: CALL 'public abstract fun isEmpty (): kotlin.Boolean declared in kotlin.collections.List' type=kotlin.Boolean origin=null
+          $this: CALL 'public final fun <get-points> (): kotlin.collections.List<com.trail2.ai_route.RoutePoint> declared in com.trail2.ai_route.GeneratedRoute' type=kotlin.collections.List<com.trail2.ai_route.RoutePoint> origin=GET_PROPERTY
+            $this: GET_VAR 'route: com.trail2.ai_route.GeneratedRoute declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.trail2.ai_route.GeneratedRoute origin=null
+        then: RETURN type=kotlin.Nothing from='private final fun setupMap (mapView: com.yandex.mapkit.mapview.MapView, route: com.trail2.ai_route.GeneratedRoute, context: android.content.Context): kotlin.Unit declared in com.trail2.ui.screens.RouteResultScreenKt'
+          GET_FIELD 'FIELD FIELD_FOR_OBJECT_INSTANCE name:INSTANCE type:kotlin.Unit visibility:public [final,static] declared in kotlin.Unit' type=kotlin.Unit origin=null
+    VAR name:midPoint type:com.trail2.ai_route.RoutePoint [val]
+      CALL 'public abstract fun get (index: kotlin.Int): E of kotlin.collections.List [operator] declared in kotlin.collections.List' type=com.trail2.ai_route.RoutePoint origin=GET_ARRAY_ELEMENT
+        $this: CALL 'public final fun <get-points> (): kotlin.collections.List<com.trail2.ai_route.RoutePoint> declared in com.trail2.ai_route.GeneratedRoute' type=kotlin.collections.List<com.trail2.ai_route.RoutePoint> origin=GET_PROPERTY
+          $this: GET_VAR 'route: com.trail2.ai_route.GeneratedRoute declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.trail2.ai_route.GeneratedRoute origin=null
+        index: CALL 'public final fun div (other: kotlin.Int): kotlin.Int [operator] declared in kotlin.Int' type=kotlin.Int origin=DIV
+          $this: CALL 'public abstract fun <get-size> (): kotlin.Int declared in kotlin.collections.List' type=kotlin.Int origin=GET_PROPERTY
+            $this: CALL 'public final fun <get-points> (): kotlin.collections.List<com.trail2.ai_route.RoutePoint> declared in com.trail2.ai_route.GeneratedRoute' type=kotlin.collections.List<com.trail2.ai_route.RoutePoint> origin=GET_PROPERTY
+              $this: GET_VAR 'route: com.trail2.ai_route.GeneratedRoute declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.trail2.ai_route.GeneratedRoute origin=null
+          other: CONST Int type=kotlin.Int value=2
+    CALL 'public abstract fun move (p0: @[EnhancedNullability] com.yandex.mapkit.map.CameraPosition): kotlin.Unit declared in com.yandex.mapkit.map.Map' type=kotlin.Unit origin=null
+      $this: GET_VAR 'val map: com.yandex.mapkit.map.Map [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.yandex.mapkit.map.Map origin=null
+      p0: CONSTRUCTOR_CALL 'public constructor <init> (p0: @[EnhancedNullability] com.yandex.mapkit.geometry.Point, p1: kotlin.Float, p2: kotlin.Float, p3: kotlin.Float) declared in com.yandex.mapkit.map.CameraPosition' type=com.yandex.mapkit.map.CameraPosition origin=null
+        p0: CONSTRUCTOR_CALL 'public constructor <init> (p0: kotlin.Double, p1: kotlin.Double) declared in com.yandex.mapkit.geometry.Point' type=com.yandex.mapkit.geometry.Point origin=null
+          p0: CALL 'public final fun <get-lat> (): kotlin.Double declared in com.trail2.ai_route.RoutePoint' type=kotlin.Double origin=GET_PROPERTY
+            $this: GET_VAR 'val midPoint: com.trail2.ai_route.RoutePoint [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.trail2.ai_route.RoutePoint origin=null
+          p1: CALL 'public final fun <get-lon> (): kotlin.Double declared in com.trail2.ai_route.RoutePoint' type=kotlin.Double origin=GET_PROPERTY
+            $this: GET_VAR 'val midPoint: com.trail2.ai_route.RoutePoint [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.trail2.ai_route.RoutePoint origin=null
+        p1: CONST Float type=kotlin.Float value=13.0
+        p2: CONST Float type=kotlin.Float value=0.0
+        p3: CONST Float type=kotlin.Float value=0.0
+    VAR name:polylinePoints type:kotlin.collections.List<com.yandex.mapkit.geometry.Point> [val]
+      CALL 'public final fun map <T, R> (transform: kotlin.Function1<T of kotlin.collections.CollectionsKt.map, R of kotlin.collections.CollectionsKt.map>): kotlin.collections.List<R of kotlin.collections.CollectionsKt.map> [inline] declared in kotlin.collections.CollectionsKt' type=kotlin.collections.List<com.yandex.mapkit.geometry.Point> origin=null
+        <T>: com.trail2.ai_route.RoutePoint
+        <R>: com.yandex.mapkit.geometry.Point
+        $receiver: CALL 'public final fun <get-points> (): kotlin.collections.List<com.trail2.ai_route.RoutePoint> declared in com.trail2.ai_route.GeneratedRoute' type=kotlin.collections.List<com.trail2.ai_route.RoutePoint> origin=GET_PROPERTY
+          $this: GET_VAR 'route: com.trail2.ai_route.GeneratedRoute declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.trail2.ai_route.GeneratedRoute origin=null
+        transform: BLOCK type=kotlin.Function1<com.trail2.ai_route.RoutePoint, com.yandex.mapkit.geometry.Point> origin=LAMBDA
+          COMPOSITE type=kotlin.Unit origin=null
+          FUNCTION_REFERENCE 'private final fun setupMap$lambda$13 (it: com.trail2.ai_route.RoutePoint): com.yandex.mapkit.geometry.Point declared in com.trail2.ui.screens.RouteResultScreenKt' type=kotlin.Function1<com.trail2.ai_route.RoutePoint, com.yandex.mapkit.geometry.Point> origin=INLINE_LAMBDA reflectionTarget=null
+    VAR name:polylineObj type:com.yandex.mapkit.map.PolylineMapObject [val]
+      BLOCK type=com.yandex.mapkit.map.PolylineMapObject origin=null
+        VAR IR_TEMPORARY_VARIABLE name:tmp1 type:kotlin.Any? [val]
+          CALL 'public abstract fun addPolyline (p0: @[EnhancedNullability] com.yandex.mapkit.geometry.Polyline): @[EnhancedNullability] com.yandex.mapkit.map.PolylineMapObject declared in com.yandex.mapkit.map.MapObjectCollection' type=@[EnhancedNullability] com.yandex.mapkit.map.PolylineMapObject origin=null
+            $this: CALL 'public abstract fun getMapObjects (): @[EnhancedNullability] com.yandex.mapkit.map.MapObjectCollection declared in com.yandex.mapkit.map.Map' type=@[EnhancedNullability] com.yandex.mapkit.map.MapObjectCollection origin=GET_PROPERTY
+              $this: GET_VAR 'val map: com.yandex.mapkit.map.Map [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.yandex.mapkit.map.Map origin=null
+            p0: CONSTRUCTOR_CALL 'public constructor <init> (p0: @[EnhancedNullability] @[FlexibleMutability] kotlin.collections.MutableList<@[FlexibleNullability] com.yandex.mapkit.geometry.Point?>) declared in com.yandex.mapkit.geometry.Polyline' type=com.yandex.mapkit.geometry.Polyline origin=null
+              p0: GET_VAR 'val polylinePoints: kotlin.collections.List<com.yandex.mapkit.geometry.Point> [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=kotlin.collections.List<com.yandex.mapkit.geometry.Point> origin=null
+        CALL 'public final fun checkNotNullExpressionValue (value: kotlin.Any?, expression: kotlin.String): kotlin.Unit declared in kotlin.jvm.internal.Intrinsics' type=kotlin.Unit origin=null
+          value: GET_VAR 'val tmp1: kotlin.Any? [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=kotlin.Any? origin=null
+          expression: CONST String type=kotlin.String value="addPolyline(...)"
+        GET_VAR 'val tmp1: kotlin.Any? [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=kotlin.Any? origin=null
+    COMPOSITE type=kotlin.Unit origin=null
+      CALL 'public final fun apply <T> (block: @[ExtensionFunctionType] kotlin.Function1<T of kotlin.StandardKt.apply, kotlin.Unit>): T of kotlin.StandardKt.apply [inline] declared in kotlin.StandardKt' type=com.yandex.mapkit.map.PolylineMapObject origin=null
+        <T>: com.yandex.mapkit.map.PolylineMapObject
+        $receiver: GET_VAR 'val polylineObj: com.yandex.mapkit.map.PolylineMapObject [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.yandex.mapkit.map.PolylineMapObject origin=null
+        block: BLOCK type=@[ExtensionFunctionType] kotlin.Function1<com.yandex.mapkit.map.PolylineMapObject, kotlin.Unit> origin=LAMBDA
+          COMPOSITE type=kotlin.Unit origin=null
+          FUNCTION_REFERENCE 'private final fun setupMap$lambda$14 (): kotlin.Unit declared in com.trail2.ui.screens.RouteResultScreenKt' type=@[ExtensionFunctionType] kotlin.Function1<com.yandex.mapkit.map.PolylineMapObject, kotlin.Unit> origin=INLINE_LAMBDA reflectionTarget=null
+      COMPOSITE type=kotlin.Unit origin=null
+    CALL 'public final fun forEachIndexed <T> (action: kotlin.Function2<@[ParameterName(name = "index")] kotlin.Int, T of kotlin.collections.CollectionsKt.forEachIndexed, kotlin.Unit>): kotlin.Unit [inline] declared in kotlin.collections.CollectionsKt' type=kotlin.Unit origin=null
+      <T>: com.trail2.ai_route.RoutePoint
+      $receiver: CALL 'public final fun <get-points> (): kotlin.collections.List<com.trail2.ai_route.RoutePoint> declared in com.trail2.ai_route.GeneratedRoute' type=kotlin.collections.List<com.trail2.ai_route.RoutePoint> origin=GET_PROPERTY
+        $this: GET_VAR 'route: com.trail2.ai_route.GeneratedRoute declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.trail2.ai_route.GeneratedRoute origin=null
+      action: BLOCK type=kotlin.Function2<kotlin.Int, com.trail2.ai_route.RoutePoint, kotlin.Unit> origin=LAMBDA
+        COMPOSITE type=kotlin.Unit origin=null
+        FUNCTION_REFERENCE 'private final fun setupMap$lambda$16 ($context: android.content.Context, $map: com.yandex.mapkit.map.Map, idx: kotlin.Int, point: com.trail2.ai_route.RoutePoint): kotlin.Unit declared in com.trail2.ui.screens.RouteResultScreenKt' type=kotlin.Function2<kotlin.Int, com.trail2.ai_route.RoutePoint, kotlin.Unit> origin=INLINE_LAMBDA reflectionTarget=null
+          $context: GET_VAR 'context: android.content.Context declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=android.content.Context origin=null
+          $map: GET_VAR 'val map: com.yandex.mapkit.map.Map [val] declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap' type=com.yandex.mapkit.map.Map origin=null
+
+	at org.jetbrains.kotlin.backend.jvm.codegen.FunctionCodegen.generate(FunctionCodegen.kt:47)
+	at org.jetbrains.kotlin.backend.jvm.codegen.FunctionCodegen.generate$default(FunctionCodegen.kt:40)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generateMethodNode(ClassCodegen.kt:406)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generateMethod(ClassCodegen.kt:423)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ClassCodegen.generate(ClassCodegen.kt:168)
+	at org.jetbrains.kotlin.backend.jvm.FileCodegen.lower(JvmPhases.kt:39)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseFactoriesKt.createFilePhase$lambda$4(PhaseFactories.kt:71)
+	at org.jetbrains.kotlin.backend.common.phaser.PhaseBuildersKt$createSimpleNamedCompilerPhase$1.phaseBody(PhaseBuilders.kt:69)
+	at org.jetbrains.kotlin.backend.common.phaser.SimpleNamedCompilerPhase.phaseBody(CompilerPhase.kt:226)
+	at org.jetbrains.kotlin.backend.common.phaser.AbstractNamedCompilerPhase.invoke(CompilerPhase.kt:113)
+	at org.jetbrains.kotlin.backend.common.phaser.PerformByIrFilePhase.invokeSequential(performByIrFile.kt:62)
+	... 44 more
+Caused by: java.lang.RuntimeException: Exception while generating code for:
+FUN INLINE_LAMBDA name:setupMap$lambda$14 visibility:private modality:FINAL <> ($receiver:com.yandex.mapkit.map.PolylineMapObject) returnType:kotlin.Unit
+  $receiver: VALUE_PARAMETER name:$this$apply type:com.yandex.mapkit.map.PolylineMapObject
+  BLOCK_BODY
+    VAR name:$i$a$-apply-RouteResultScreenKt$setupMap$1 type:kotlin.Int [val]
+      CONST Int type=kotlin.Int value=0
+    SET_FIELD 'FIELD IR_EXTERNAL_JAVA_DECLARATION_STUB name:strokeColor type:kotlin.Int visibility:public [final,static] declared in android.R.attr' type=kotlin.Unit superQualifierSymbol=android.R.attr origin=EQ
+      value: CALL 'public open fun parseColor (p0: @[FlexibleNullability] kotlin.String?): kotlin.Int declared in android.graphics.Color' type=kotlin.Int origin=null
+        p0: CONST String type=kotlin.String value="#2D6A4F"
+    CALL 'public abstract fun setStrokeWidth (p0: kotlin.Float): kotlin.Unit declared in com.yandex.mapkit.map.PolylineMapObject' type=kotlin.Unit origin=EQ
+      $this: GET_VAR '$this$apply: com.yandex.mapkit.map.PolylineMapObject declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap$lambda$14' type=com.yandex.mapkit.map.PolylineMapObject origin=null
+      p0: CONST Float type=kotlin.Float value=5.0
+    CALL 'public abstract fun setOutlineColor (p0: kotlin.Int): kotlin.Unit declared in com.yandex.mapkit.map.PolylineMapObject' type=kotlin.Unit origin=EQ
+      $this: GET_VAR '$this$apply: com.yandex.mapkit.map.PolylineMapObject declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap$lambda$14' type=com.yandex.mapkit.map.PolylineMapObject origin=null
+      p0: CONST Int type=kotlin.Int value=-1
+    CALL 'public abstract fun setOutlineWidth (p0: kotlin.Float): kotlin.Unit declared in com.yandex.mapkit.map.PolylineMapObject' type=kotlin.Unit origin=EQ
+      $this: GET_VAR '$this$apply: com.yandex.mapkit.map.PolylineMapObject declared in com.trail2.ui.screens.RouteResultScreenKt.setupMap$lambda$14' type=com.yandex.mapkit.map.PolylineMapObject origin=null
+      p0: CONST Float type=kotlin.Float value=2.0
+
+	at org.jetbrains.kotlin.backend.jvm.codegen.FunctionCodegen.generate(FunctionCodegen.kt:47)
+	at org.jetbrains.kotlin.backend.jvm.codegen.IrSourceCompilerForInline.generateLambdaBody(IrSourceCompilerForInline.kt:67)
+	at org.jetbrains.kotlin.codegen.inline.ExpressionLambda.generateLambdaBody(LambdaInfo.kt:72)
+	at org.jetbrains.kotlin.backend.jvm.codegen.IrInlineCodegen.genValueAndPut(IrInlineCodegen.kt:100)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitCall$handleParameter(ExpressionCodegen.kt:616)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitCall(ExpressionCodegen.kt:644)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitCall(ExpressionCodegen.kt:138)
+	at org.jetbrains.kotlin.ir.expressions.IrCall.accept(IrCall.kt:24)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitStatementContainer(ExpressionCodegen.kt:579)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitContainerExpression(ExpressionCodegen.kt:593)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitContainerExpression(ExpressionCodegen.kt:138)
+	at org.jetbrains.kotlin.ir.visitors.IrElementVisitor$DefaultImpls.visitComposite(IrElementVisitor.kt:125)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitComposite(ExpressionCodegen.kt:138)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitComposite(ExpressionCodegen.kt:138)
+	at org.jetbrains.kotlin.ir.expressions.IrComposite.accept(IrComposite.kt:18)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitStatementContainer(ExpressionCodegen.kt:579)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitBlockBody(ExpressionCodegen.kt:584)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitBlockBody(ExpressionCodegen.kt:138)
+	at org.jetbrains.kotlin.ir.expressions.IrBlockBody.accept(IrBlockBody.kt:20)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.generate(ExpressionCodegen.kt:240)
+	at org.jetbrains.kotlin.backend.jvm.codegen.FunctionCodegen.doGenerate(FunctionCodegen.kt:123)
+	at org.jetbrains.kotlin.backend.jvm.codegen.FunctionCodegen.generate(FunctionCodegen.kt:44)
+	... 54 more
+Caused by: java.lang.AssertionError: access of const val: SET_FIELD 'FIELD IR_EXTERNAL_JAVA_DECLARATION_STUB name:strokeColor type:kotlin.Int visibility:public [final,static] declared in android.R.attr' type=kotlin.Unit superQualifierSymbol=android.R.attr origin=EQ
+  value: CALL 'public open fun parseColor (p0: @[FlexibleNullability] kotlin.String?): kotlin.Int declared in android.graphics.Color' type=kotlin.Int origin=null
+    p0: CONST String type=kotlin.String value="#2D6A4F"
+
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitFieldAccess(ExpressionCodegen.kt:861)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitFieldAccess(ExpressionCodegen.kt:138)
+	at org.jetbrains.kotlin.ir.visitors.IrElementVisitor$DefaultImpls.visitSetField(IrElementVisitor.kt:206)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitSetField(ExpressionCodegen.kt:908)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitSetField(ExpressionCodegen.kt:138)
+	at org.jetbrains.kotlin.ir.expressions.IrSetField.accept(IrSetField.kt:21)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitStatementContainer(ExpressionCodegen.kt:579)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitBlockBody(ExpressionCodegen.kt:584)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.visitBlockBody(ExpressionCodegen.kt:138)
+	at org.jetbrains.kotlin.ir.expressions.IrBlockBody.accept(IrBlockBody.kt:20)
+	at org.jetbrains.kotlin.backend.jvm.codegen.ExpressionCodegen.generate(ExpressionCodegen.kt:240)
+	at org.jetbrains.kotlin.backend.jvm.codegen.FunctionCodegen.doGenerate(FunctionCodegen.kt:123)
+	at org.jetbrains.kotlin.backend.jvm.codegen.FunctionCodegen.generate(FunctionCodegen.kt:44)
+	... 75 more
+
+
