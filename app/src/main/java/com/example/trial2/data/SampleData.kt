@@ -1,9 +1,4 @@
-package com.example.trial2.data
-
-import com.trail2.data.Comment
-import com.trail2.data.Difficulty
-import com.trail2.data.TrailRoute
-import com.trail2.data.User
+package com.trail2.data
 
 object SampleData {
 

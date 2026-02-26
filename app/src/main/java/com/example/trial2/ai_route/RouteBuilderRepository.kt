@@ -5,8 +5,11 @@ package com.trail2.ai_route
 // ══════════════════════════════════════════════════════════════
 
 import kotlinx.coroutines.delay
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class RouteBuilderRepository {
+@Singleton
+class RouteBuilderRepository @Inject constructor() {
 
     /**
      * Генерирует маршрут через AI.

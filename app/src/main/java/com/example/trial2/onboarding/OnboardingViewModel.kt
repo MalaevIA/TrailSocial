@@ -1,33 +1,22 @@
 package com.trail2.onboarding
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-// ─────────────────────────────────────────────
-// Шаги онбординга
-// ─────────────────────────────────────────────
 enum class OnboardingStep {
-    WELCOME,
-    CITIES,
-    FITNESS,
-    INTERESTS,
-    PROFILE
+    WELCOME, CITIES, FITNESS, INTERESTS, PROFILE
 }
 
-// ─────────────────────────────────────────────
-// UI State
-// ─────────────────────────────────────────────
 data class OnboardingUiState(
     val step: OnboardingStep = OnboardingStep.WELCOME,
     val answers: OnboardingAnswers = OnboardingAnswers(),
     val isLoading: Boolean = false,
     val isCompleted: Boolean = false,
     val error: String? = null,
-
-    // Промежуточные поля формы профиля (не попадают в answers до финального сохранения)
     val nameInput: String = "",
     val emailInput: String = "",
     val passwordInput: String = "",
@@ -37,42 +26,45 @@ data class OnboardingUiState(
     val passwordError: String? = null
 )
 
-// ─────────────────────────────────────────────
-// ViewModel
-// ─────────────────────────────────────────────
-class OnboardingViewModel(app: Application) : AndroidViewModel(app) {
-
-    private val repo = OnboardingRepository(app)
+@HiltViewModel
+class OnboardingViewModel @Inject constructor(
+    private val repo: OnboardingRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
-    // Проверяем при запуске — может онбординг уже пройден
+    // null = ещё загружается из DataStore
+    private val _isOnboardingCompleted = MutableStateFlow<Boolean?>(null)
+    val isOnboardingCompleted: StateFlow<Boolean?> = _isOnboardingCompleted.asStateFlow()
+
+    val savedAnswers: StateFlow<OnboardingAnswers> = repo.savedAnswers
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OnboardingAnswers())
+
     init {
         viewModelScope.launch {
-            repo.isOnboardingCompleted.first().let { completed ->
+            repo.isOnboardingCompleted.collect { completed ->
+                _isOnboardingCompleted.value = completed
                 if (completed) _uiState.update { it.copy(isCompleted = true) }
             }
         }
     }
 
-    // ── Навигация по шагам ──────────────────
+    // ── Навигация ─────────────────────────────────
 
     fun nextStep() {
-        val current = _uiState.value.step
-        val next = when (current) {
+        val next = when (_uiState.value.step) {
             OnboardingStep.WELCOME   -> OnboardingStep.CITIES
             OnboardingStep.CITIES    -> OnboardingStep.FITNESS
             OnboardingStep.FITNESS   -> OnboardingStep.INTERESTS
             OnboardingStep.INTERESTS -> OnboardingStep.PROFILE
-            OnboardingStep.PROFILE   -> return // финал — handled by finishOnboarding()
+            OnboardingStep.PROFILE   -> return
         }
         _uiState.update { it.copy(step = next, error = null) }
     }
 
     fun prevStep() {
-        val current = _uiState.value.step
-        val prev = when (current) {
+        val prev = when (_uiState.value.step) {
             OnboardingStep.WELCOME   -> return
             OnboardingStep.CITIES    -> OnboardingStep.WELCOME
             OnboardingStep.FITNESS   -> OnboardingStep.CITIES
@@ -82,7 +74,7 @@ class OnboardingViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.update { it.copy(step = prev, error = null) }
     }
 
-    // ── Города ──────────────────────────────
+    // ── Выбор данных ──────────────────────────────
 
     fun toggleCity(cityId: String) {
         val current = _uiState.value.answers.selectedCityIds.toMutableList()
@@ -90,13 +82,9 @@ class OnboardingViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.update { it.copy(answers = it.answers.copy(selectedCityIds = current)) }
     }
 
-    // ── Уровень подготовки ──────────────────
-
     fun selectFitnessLevel(level: FitnessLevel) {
         _uiState.update { it.copy(answers = it.answers.copy(fitnessLevel = level)) }
     }
-
-    // ── Интересы ────────────────────────────
 
     fun toggleInterest(id: String) {
         val current = _uiState.value.answers.selectedInterestIds.toMutableList()
@@ -104,66 +92,50 @@ class OnboardingViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.update { it.copy(answers = it.answers.copy(selectedInterestIds = current)) }
     }
 
-    // ── Поле профиля ────────────────────────
+    // ── Поля профиля ──────────────────────────────
 
     fun onNameChange(v: String) = _uiState.update { it.copy(nameInput = v, nameError = null) }
     fun onEmailChange(v: String) = _uiState.update { it.copy(emailInput = v, emailError = null) }
     fun onPasswordChange(v: String) = _uiState.update { it.copy(passwordInput = v, passwordError = null) }
     fun togglePasswordVisible() = _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
 
-    // ── Финал: сохранить и завершить ────────
+    // ── Финал ─────────────────────────────────────
 
     fun finishOnboarding() {
         if (!validateProfile()) return
-
         val state = _uiState.value
         val finalAnswers = state.answers.copy(
             displayName = state.nameInput.trim(),
             email       = state.emailInput.trim(),
-            password    = state.passwordInput     // только в памяти
+            password    = state.passwordInput
         )
-
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-
-            // 1. Сохранить локально
             repo.saveAnswers(finalAnswers)
-
-            // 2. Отправить на сервер (ЗАКОММЕНТИРОВАНО — нет бэкенда)
-            /*
-            val serverResult = repo.sendToServer(finalAnswers)
-            if (serverResult.isFailure) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = "Не удалось зарегистрироваться: ${serverResult.exceptionOrNull()?.message}"
-                    )
-                }
-                return@launch
-            }
-            */
-
-            // 3. Пометить онбординг завершённым
             repo.markCompleted()
-
+            _isOnboardingCompleted.value = true
             _uiState.update { it.copy(isLoading = false, isCompleted = true) }
         }
     }
 
-    /** Пропустить регистрацию (гостевой режим) */
     fun skipOnboarding() {
         viewModelScope.launch {
             repo.markCompleted()
+            _isOnboardingCompleted.value = true
             _uiState.update { it.copy(isCompleted = true) }
         }
     }
 
-    // ── Валидация ────────────────────────────
+    fun logout() {
+        viewModelScope.launch {
+            repo.clearAll()
+            _isOnboardingCompleted.value = false
+            _uiState.update { OnboardingUiState() }
+        }
+    }
 
     private fun validateProfile(): Boolean {
         val s = _uiState.value
-        var valid = true
-
         val nameError = when {
             s.nameInput.isBlank() -> "Введите имя"
             s.nameInput.trim().length < 2 -> "Имя слишком короткое"
@@ -178,15 +150,13 @@ class OnboardingViewModel(app: Application) : AndroidViewModel(app) {
             s.passwordInput.length < 6 -> "Пароль — минимум 6 символов"
             else -> null
         }
-
         if (nameError != null || emailError != null || passwordError != null) {
             _uiState.update { it.copy(nameError = nameError, emailError = emailError, passwordError = passwordError) }
-            valid = false
+            return false
         }
-        return valid
+        return true
     }
 
-    // Прогресс 0..1 для индикатора
     val progress: Float get() = when (_uiState.value.step) {
         OnboardingStep.WELCOME   -> 0f
         OnboardingStep.CITIES    -> 0.25f

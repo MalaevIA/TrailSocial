@@ -16,16 +16,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.trial2.data.SampleData
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.trail2.data.Difficulty
+import com.trail2.data.SampleData
+import com.trail2.ui.RouteViewModel
 import com.trail2.ui.components.RouteCard
+import com.trail2.ui.components.UserAvatar
 import com.trail2.ui.theme.ForestGreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FeedScreen(onRouteClick: (String) -> Unit) {
-    val routes = remember { SampleData.routes }
-    var selectedFilter by remember { mutableStateOf("Все") }
+fun FeedScreen(
+    onRouteClick: (String) -> Unit,
+    vm: RouteViewModel = hiltViewModel()
+) {
+    val routes by vm.routes.collectAsStateWithLifecycle()
+    val filterDifficulty by vm.filterDifficulty.collectAsStateWithLifecycle()
+
     val filters = listOf("Все", "Лёгкие", "Сложные", "Многодневные", "Выходного дня")
+    val selectedFilter = when (filterDifficulty) {
+        Difficulty.EASY     -> "Лёгкие"
+        Difficulty.HARD, Difficulty.EXPERT -> "Сложные"
+        else -> "Все"
+    }
 
     Scaffold(
         topBar = {
@@ -55,26 +69,32 @@ fun FeedScreen(onRouteClick: (String) -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Stories / Active users row
-            item {
-                StoriesRow()
-            }
+            item { StoriesRow() }
 
-            // Filter chips
             item {
                 FilterChipsRow(
                     filters = filters,
                     selectedFilter = selectedFilter,
-                    onFilterSelected = { selectedFilter = it }
+                    onFilterSelected = { filter ->
+                        vm.setFilter(
+                            when (filter) {
+                                "Лёгкие" -> Difficulty.EASY
+                                "Сложные" -> Difficulty.HARD
+                                else -> null
+                            }
+                        )
+                    }
                 )
             }
 
-            // Routes feed
-            items(routes) { route ->
-                RouteCard(route = route, onClick = { onRouteClick(route.id) })
+            items(routes, key = { it.id }) { route ->
+                RouteCard(
+                    route = route,
+                    onClick = { onRouteClick(route.id) }
+                )
             }
 
-            item { Spacer(Modifier.height(72.dp)) } // bottom nav space
+            item { Spacer(Modifier.height(72.dp)) }
         }
     }
 }
@@ -89,11 +109,7 @@ fun StoriesRow() {
                 val user = users[i]
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Box {
-                        com.trail2.ui.components.UserAvatar(
-                            colorHex = user.avatarUrl,
-                            name = user.name,
-                            size = 52
-                        )
+                        UserAvatar(colorHex = user.avatarUrl, name = user.name, size = 52)
                         if (i < 2) {
                             Surface(
                                 modifier = Modifier.align(Alignment.BottomEnd).size(14.dp),

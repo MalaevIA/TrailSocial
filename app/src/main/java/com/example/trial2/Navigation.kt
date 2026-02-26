@@ -1,11 +1,5 @@
 package com.trail2
 
-// ══════════════════════════════════════════════════════════════
-// Файл: Navigation.kt  (ПОЛНАЯ ЗАМЕНА вашего текущего файла)
-//
-// Добавлена вкладка "AI-маршрут" и логика отображения результата.
-// ══════════════════════════════════════════════════════════════
-
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,27 +8,26 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ai_route.GeneratedRoute
-import com.trail2.onboarding.OnboardingRepository
+import com.trail2.onboarding.OnboardingViewModel
 import com.trail2.ui.screens.*
 import com.trail2.ui.screens.onboarding.OnboardingNavGraph
 
-// ── Экраны ───────────────────────────────────────────────────
+// ── Экраны ────────────────────────────────────────────────
 
 sealed class Screen {
     object Feed       : Screen()
     object Explore    : Screen()
-    object AIRoute    : Screen()   // ← новая вкладка
+    object AIRoute    : Screen()
     object Profile    : Screen()
-    data class RouteDetail(val routeId: String)   : Screen()
+    data class RouteDetail(val routeId: String) : Screen()
     data class AIRouteResult(val route: GeneratedRoute) : Screen()
 }
 
-// ── Вкладки нижней панели ─────────────────────────────────────
+// ── Вкладки нижней панели ─────────────────────────────────
 
 data class BottomTab(
     val screen: Screen,
@@ -44,46 +37,45 @@ data class BottomTab(
 )
 
 val bottomTabs = listOf(
-    BottomTab(Screen.Feed,    "Лента",     Icons.Filled.Home,       Icons.Outlined.Home),
-    BottomTab(Screen.Explore, "Поиск",     Icons.Filled.Search,     Icons.Outlined.Search),
-    BottomTab(Screen.AIRoute, "AI-маршрут",Icons.Filled.AutoAwesome,Icons.Outlined.AutoAwesome),
-    BottomTab(Screen.Profile, "Профиль",   Icons.Filled.Person,     Icons.Outlined.Person)
+    BottomTab(Screen.Feed,    "Лента",      Icons.Filled.Home,        Icons.Outlined.Home),
+    BottomTab(Screen.Explore, "Поиск",      Icons.Filled.Search,      Icons.Outlined.Search),
+    BottomTab(Screen.AIRoute, "AI-маршрут", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome),
+    BottomTab(Screen.Profile, "Профиль",    Icons.Filled.Person,      Icons.Outlined.Person)
 )
 
-// ── Главная точка входа ────────────────────────────────────────
+// ── Главная точка входа ───────────────────────────────────
 
 @Composable
-fun AppNavigation() {
-    val context = LocalContext.current
-    val repo = remember { OnboardingRepository(context) }
-    val isCompleted by repo.isOnboardingCompleted
-        .collectAsStateWithLifecycle(initialValue = null)
+fun AppNavigation(
+    vm: OnboardingViewModel = hiltViewModel()
+) {
+    val isCompleted by vm.isOnboardingCompleted.collectAsStateWithLifecycle()
 
     when (isCompleted) {
-        null  -> { /* splash — DataStore ещё грузится */ }
-        false -> OnboardingNavGraph(onFinished = { /* recompose сработает сам */ })
+        null  -> { /* Splash — DataStore ещё загружается */ }
         true  -> MainAppContent()
+        false -> OnboardingNavGraph(
+            onFinished = { /* recompose сработает через StateFlow */ },
+            viewModel  = vm
+        )
     }
 }
 
-// ── Основное приложение (после онбординга) ────────────────────
+// ── Основное приложение ───────────────────────────────────
 
 @Composable
 fun MainAppContent() {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Feed) }
     var selectedTabIndex by remember { mutableStateOf(0) }
 
-    // Если текущий экран — не вкладка (детали маршрута, результат AI) — показываем без Scaffold
     when (val screen = currentScreen) {
-
         is Screen.RouteDetail -> {
-            FeedDetailScreen(               // ← ваш существующий RouteDetailScreen
+            RouteDetailScreen(
                 routeId = screen.routeId,
                 onBack  = { currentScreen = bottomTabs[selectedTabIndex].screen }
             )
             return
         }
-
         is Screen.AIRouteResult -> {
             RouteResultScreen(
                 route     = screen.route,
@@ -92,8 +84,7 @@ fun MainAppContent() {
             )
             return
         }
-
-        else -> { /* продолжаем → рисуем BottomNav */ }
+        else -> {}
     }
 
     Scaffold(
@@ -117,7 +108,7 @@ fun MainAppContent() {
                 }
             }
         }
-    ) { padding ->
+    ) { _ ->
         AnimatedContent(
             targetState = currentScreen,
             transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(200)) },
@@ -138,13 +129,4 @@ fun MainAppContent() {
             }
         }
     }
-}
-
-// ── Алиас для детального экрана существующего маршрута ──────────
-// Если у вас файл называется RouteDetailScreen, просто замените
-// FeedDetailScreen на RouteDetailScreen и удейте этот алиас.
-@Composable
-private fun FeedDetailScreen(routeId: String, onBack: () -> Unit) {
-    // TODO: замените на ваш реальный RouteDetailScreen(routeId, onBack)
-    RouteDetailScreen(routeId = routeId, onBack = onBack)
 }

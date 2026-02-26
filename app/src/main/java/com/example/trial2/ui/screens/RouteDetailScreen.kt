@@ -16,7 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.trial2.data.SampleData
+import com.trail2.data.SampleData
 import com.trail2.data.Difficulty
 import com.trail2.data.TrailRoute
 import com.trail2.ui.components.*
@@ -149,7 +149,7 @@ fun RouteDetailScreen(routeId: String, onBack: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     repeat(5) { i ->
                         Icon(
-                            if (i < route.rating.toInt()) Icons.Filled.Star else Icons.Outlined.PlayArrow,
+                            if (i < route.rating.toInt()) Icons.Filled.Star else Icons.Outlined.Star,
                             contentDescription = null,
                             tint = Color(0xFFE9C46A),
                             modifier = Modifier.size(18.dp)

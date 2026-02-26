@@ -159,7 +159,6 @@ private fun setupMap(mapView: MapView, route: GeneratedRoute, context: Context) 
     val polylinePoints = route.points.map { Point(it.lat, it.lon) }
     val polylineObj = map.mapObjects.addPolyline(Polyline(polylinePoints))
     polylineObj.apply {
-        var myStrokeColor = android.graphics.Color.parseColor("#2D6A4F")
         strokeWidth = 5f
         outlineColor = android.graphics.Color.WHITE
         outlineWidth = 2f

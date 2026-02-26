@@ -6,8 +6,10 @@ package com.trail2.ai_route
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 enum class BuilderStep(val title: String, val stepNum: Int) {
     GOAL("Цель и компания", 1),
@@ -32,9 +34,10 @@ data class RouteBuilderUiState(
     val stepError: String? = null
 )
 
-class RouteBuilderViewModel : ViewModel() {
-
-    private val repo = RouteBuilderRepository()
+@HiltViewModel
+class RouteBuilderViewModel @Inject constructor(
+    private val repo: RouteBuilderRepository
+) : ViewModel() {
     private val _state = MutableStateFlow(RouteBuilderUiState())
     val state: StateFlow<RouteBuilderUiState> = _state.asStateFlow()
 

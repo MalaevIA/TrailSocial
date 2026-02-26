@@ -16,13 +16,10 @@ import androidx.compose.ui.text.input.*
 
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lint.kotlin.metadata.Visibility
 import com.trail2.onboarding.OnboardingUiState
 import com.trail2.ui.components.onboarding.OnboardingButton
 import com.trail2.ui.components.onboarding.OnboardingTopBar
 import com.trail2.ui.components.onboarding.StepTitle
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
 
 // ─────────────────────────────────────────────
 // Файл: ui/screens/onboarding/ProfileSetupScreen.kt

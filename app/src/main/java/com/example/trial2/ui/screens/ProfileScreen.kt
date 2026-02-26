@@ -6,11 +6,8 @@ package com.trail2.ui.screens
 // Читает данные пользователя из OnboardingRepository (DataStore).
 // ══════════════════════════════════════════════════════════════
 import androidx.compose.material3.AlertDialog
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -22,25 +19,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.onboarding.FitnessLevel
 import com.trail2.onboarding.OnboardingData
-import com.trail2.onboarding.OnboardingRepository
+import com.trail2.onboarding.OnboardingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
-    val scope = rememberCoroutineScope()
+fun ProfileScreen(
+    vm: OnboardingViewModel = hiltViewModel()
+) {
     var showLogoutDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    val repo = remember { OnboardingRepository(context) }
-    val answers by repo.savedAnswers.collectAsStateWithLifecycle(
-        initialValue = com.trail2.onboarding.OnboardingAnswers()
-    )
+    val answers by vm.savedAnswers.collectAsStateWithLifecycle()
 
     // Разрешаем имена городов и интересов из ID
     val selectedCities = remember(answers.selectedCityIds) {
@@ -115,9 +109,7 @@ fun ProfileScreen() {
                     confirmButton = {
                         TextButton(
                             onClick = {
-                                scope.launch {
-                                    repo.clearAll()   // ← сброс DataStore
-                                }
+                                vm.logout()
                                 showLogoutDialog = false
                             }
                         ) {

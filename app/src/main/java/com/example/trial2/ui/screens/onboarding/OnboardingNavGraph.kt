@@ -3,9 +3,8 @@ package com.trail2.ui.screens.onboarding
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.trail2.onboarding.OnboardingStep
 import com.trail2.onboarding.OnboardingViewModel
 
@@ -21,7 +20,7 @@ import com.trail2.onboarding.OnboardingViewModel
 @Composable
 fun OnboardingNavGraph(
     onFinished: () -> Unit,                  // колбэк → переход к основному приложению
-    viewModel: OnboardingViewModel = viewModel()
+    viewModel: OnboardingViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
