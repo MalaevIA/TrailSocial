@@ -1,11 +1,5 @@
 package com.trail2.ui.screens
 
-// ══════════════════════════════════════════════════════════════
-// Файл: ui/screens/ProfileScreen.kt  (ПОЛНАЯ ЗАМЕНА)
-//
-// Читает данные пользователя из OnboardingRepository (DataStore).
-// ══════════════════════════════════════════════════════════════
-import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
@@ -24,32 +18,36 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.trail2.FollowListType
 import com.trail2.onboarding.FitnessLevel
 import com.trail2.onboarding.OnboardingData
 import com.trail2.onboarding.OnboardingViewModel
+import com.trail2.ui.viewmodels.ProfileViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ProfileScreen(
-    vm: OnboardingViewModel = hiltViewModel()
+    onRouteClick: (String) -> Unit = {},
+    onFollowListClick: (String, FollowListType) -> Unit = { _, _ -> },
+    onSettingsClick: () -> Unit = {},
+    profileVm: ProfileViewModel = hiltViewModel(),
+    onboardingVm: OnboardingViewModel = hiltViewModel()
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
-    val answers by vm.savedAnswers.collectAsStateWithLifecycle()
+    val profileState by profileVm.uiState.collectAsStateWithLifecycle()
+    val onboardingAnswers by onboardingVm.savedAnswers.collectAsStateWithLifecycle()
 
-    // Разрешаем имена городов и интересов из ID
-    val selectedCities = remember(answers.selectedCityIds) {
-        OnboardingData.cities.filter { it.id in answers.selectedCityIds }
-    }
-    val selectedInterests = remember(answers.selectedInterestIds) {
-        OnboardingData.interests.filter { it.id in answers.selectedInterestIds }
-    }
+    val user = profileState.user
+    val displayName = user?.name ?: onboardingAnswers.displayName.ifBlank { "Путешественник" }
 
-    val displayName = answers.displayName.ifBlank { "Путешественник" }
-    val email = answers.email
+    val selectedCities = remember(onboardingAnswers.selectedCityIds) {
+        OnboardingData.cities.filter { it.id in onboardingAnswers.selectedCityIds }
+    }
+    val selectedInterests = remember(onboardingAnswers.selectedInterestIds) {
+        OnboardingData.interests.filter { it.id in onboardingAnswers.selectedInterestIds }
+    }
 
     Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-
-        // ── Шапка ────────────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -57,7 +55,7 @@ fun ProfileScreen(
                 .background(Brush.verticalGradient(listOf(Color(0xFF1B4332), Color(0xFF52B788))))
         ) {
             IconButton(
-                onClick = { /* открыть настройки */ },
+                onClick = onSettingsClick,
                 modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
             ) {
                 Icon(Icons.Outlined.Settings, contentDescription = "Настройки", tint = Color.White)
@@ -65,8 +63,6 @@ fun ProfileScreen(
         }
 
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-
-            // ── Аватар (перекрывает шапку) ───────────────────
             Box(modifier = Modifier.offset(y = (-44).dp)) {
                 Box(
                     modifier = Modifier
@@ -76,122 +72,64 @@ fun ProfileScreen(
                         .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        displayName.take(1).uppercase(),
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Text(displayName.take(1).uppercase(), fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
 
-            // ── Кнопка редактирования ────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth().offset(y = (-36).dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                OutlinedButton(
-                    onClick = { showLogoutDialog = true },  // ← сначала показываем диалог
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Icon(Icons.Outlined.Logout, null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Выйти из аккаунта")
-                }
-            }
-            if (showLogoutDialog) {
-                AlertDialog(
-                    onDismissRequest = { showLogoutDialog = false },
-                    title = { Text("Выйти из аккаунта?") },
-                    text = { Text("Все данные профиля и настройки будут сброшены. Вы снова увидите экран приветствия.") },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                vm.logout()
-                                showLogoutDialog = false
-                            }
-                        ) {
-                            Text("Выйти", color = MaterialTheme.colorScheme.error)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showLogoutDialog = false }) {
-                            Text("Отмена")
-                        }
-                    }
-                )
-            }
-            // ── Имя и email ──────────────────────────────────
-            Text(
-                displayName,
-                fontWeight = FontWeight.Bold,
-                fontSize = 22.sp,
-                modifier = Modifier.offset(y = (-28).dp)
-            )
-            if (email.isNotBlank()) {
-                Text(
-                    email,
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.offset(y = (-24).dp)
-                )
+            Text(displayName, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.offset(y = (-28).dp))
+            if (user != null) {
+                Text("@${user.username}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.offset(y = (-24).dp))
             }
 
             Spacer(Modifier.height(4.dp))
 
-            // ── Уровень подготовки ───────────────────────────
-            answers.fitnessLevel?.let { level ->
+            onboardingAnswers.fitnessLevel?.let { level ->
                 FitnessLevelBadge(level)
                 Spacer(Modifier.height(12.dp))
             }
 
-            // ── Статистика ───────────────────────────────────
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                ProfileStatItem("Маршруты", "0")
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                ProfileStatItem("Маршруты", "${user?.routesCount ?: 0}")
                 VerticalDivider(Modifier.height(36.dp))
-                ProfileStatItem("Подписчики", "0")
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable {
+                        user?.let { onFollowListClick(it.id, FollowListType.FOLLOWERS) }
+                    }
+                ) {
+                    Text("${user?.followersCount ?: 0}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text("Подписчики", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 VerticalDivider(Modifier.height(36.dp))
-                ProfileStatItem("Подписки", "0")
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.clickable {
+                        user?.let { onFollowListClick(it.id, FollowListType.FOLLOWING) }
+                    }
+                ) {
+                    Text("${user?.followingCount ?: 0}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text("Подписки", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
 
             Spacer(Modifier.height(20.dp))
 
-            // ── Города ───────────────────────────────────────
             if (selectedCities.isNotEmpty()) {
-                SectionTitle("📍 Мои города")
+                SectionTitle("Мои города")
                 Spacer(Modifier.height(8.dp))
-                @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     selectedCities.forEach { city ->
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer
-                        ) {
+                        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primaryContainer) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Icon(
-                                    Icons.Filled.LocationOn,
-                                    null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Text(
-                                    city.name,
-                                    fontSize = 13.sp,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Icon(Icons.Filled.LocationOn, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                                Text(city.name, fontSize = 13.sp, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Medium)
                             }
                         }
                     }
@@ -199,20 +137,15 @@ fun ProfileScreen(
                 Spacer(Modifier.height(20.dp))
             }
 
-            // ── Интересы ─────────────────────────────────────
             if (selectedInterests.isNotEmpty()) {
-                SectionTitle("✨ Интересы")
+                SectionTitle("Интересы")
                 Spacer(Modifier.height(8.dp))
-                @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     selectedInterests.forEach { interest ->
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant
-                        ) {
+                        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
                             Text(
                                 "${interest.emoji} ${interest.label}",
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -225,18 +158,18 @@ fun ProfileScreen(
                 Spacer(Modifier.height(20.dp))
             }
 
-            // ── Заглушка если ничего нет ─────────────────────
-            if (selectedCities.isEmpty() && selectedInterests.isEmpty() && answers.fitnessLevel == null) {
-                EmptyProfileHint()
+            if (user?.bio?.isNotBlank() == true) {
+                SectionTitle("О себе")
+                Spacer(Modifier.height(4.dp))
+                Text(user.bio, fontSize = 14.sp)
+                Spacer(Modifier.height(20.dp))
             }
 
-            // ── Настройки / кнопка выхода ────────────────────
-            Spacer(Modifier.height(8.dp))
             HorizontalDivider()
             Spacer(Modifier.height(12.dp))
 
             OutlinedButton(
-                onClick = { /* сброс онбординга / выход */ },
+                onClick = { showLogoutDialog = true },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
@@ -246,35 +179,42 @@ fun ProfileScreen(
                 Text("Выйти из аккаунта")
             }
 
-            Spacer(Modifier.height(80.dp)) // отступ под bottom nav
+            if (showLogoutDialog) {
+                AlertDialog(
+                    onDismissRequest = { showLogoutDialog = false },
+                    title = { Text("Выйти из аккаунта?") },
+                    text = { Text("Вы будете перенаправлены на экран входа.") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            profileVm.logout()
+                            onboardingVm.logout()
+                            showLogoutDialog = false
+                        }) {
+                            Text("Выйти", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showLogoutDialog = false }) { Text("Отмена") }
+                    }
+                )
+            }
+
+            Spacer(Modifier.height(80.dp))
         }
     }
 }
 
 @Composable
 private fun FitnessLevelBadge(level: FitnessLevel) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer
-    ) {
+    Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.secondaryContainer) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(level.emoji, fontSize = 16.sp)
-            Text(
-                level.label,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-            Text(
-                "· ${level.description}",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(0.75f),
-                maxLines = 1
-            )
+            Text(level.label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+            Text("· ${level.description}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(0.75f), maxLines = 1)
         }
     }
 }
@@ -290,28 +230,4 @@ private fun ProfileStatItem(label: String, value: String) {
 @Composable
 private fun SectionTitle(text: String) {
     Text(text, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-}
-
-@Composable
-private fun EmptyProfileHint() {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("🌿", fontSize = 36.sp)
-            Spacer(Modifier.height(8.dp))
-            Text("Профиль почти пуст", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            Text(
-                "Заполните профиль при следующем запуске или в настройках",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-    }
 }

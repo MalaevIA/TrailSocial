@@ -15,8 +15,8 @@ package com.trail2.ui.screens
 //   MapKitFactory.initialize(this)
 // ══════════════════════════════════════════════════════════════
 
-import android.R.attr.strokeColor
 import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -36,8 +36,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ai_route.GeneratedRoute
 import com.trail2.ai_route.RoutePoint
+import com.trail2.ui.theme.ForestGreen
+import com.trail2.ui.viewmodels.RouteCreateViewModel
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.geometry.Polyline
@@ -50,9 +54,14 @@ import com.yandex.runtime.image.ImageProvider
 fun RouteResultScreen(
     route: GeneratedRoute,
     onBack: () -> Unit,
-    onRebuild: () -> Unit
+    onRebuild: () -> Unit,
+    onSaved: (String) -> Unit = {}
 ) {
+    val context = LocalContext.current
     var showMap by remember { mutableStateOf(true) }
+    var isSaving by remember { mutableStateOf(false) }
+    var isSaved by remember { mutableStateOf(false) }
+    var saveError by remember { mutableStateOf<String?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     Scaffold(
@@ -68,8 +77,30 @@ fun RouteResultScreen(
                     IconButton(onClick = onRebuild) {
                         Icon(Icons.Outlined.Refresh, "Перестроить", tint = MaterialTheme.colorScheme.primary)
                     }
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = {
+                        val shareText = buildString {
+                            append(route.title)
+                            append("\n${route.distanceKm} км · ${route.durationMin} мин · ${route.points.size} точек")
+                            if (route.description.isNotBlank()) append("\n\n${route.description}")
+                            if (route.tags.isNotEmpty()) append("\n\n${route.tags.joinToString(" ") { "#$it" }}")
+                            append("\n\n#TrailSocial")
+                        }
+                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                            putExtra(Intent.EXTRA_TEXT, shareText)
+                            type = "text/plain"
+                        }
+                        context.startActivity(Intent.createChooser(sendIntent, "Поделиться маршрутом"))
+                    }) {
                         Icon(Icons.Outlined.Share, "Поделиться")
+                    }
+                    IconButton(
+                        onClick = { isSaved = !isSaved }
+                    ) {
+                        Icon(
+                            if (isSaved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
+                            "Сохранить",
+                            tint = if (isSaved) ForestGreen else MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -108,7 +139,14 @@ fun RouteResultScreen(
                 }
             } else {
                 // ── Детали маршрута ───────────────────────
-                RouteDetailsPanel(route = route)
+                RouteDetailsPanel(
+                    route = route,
+                    isSaving = isSaving,
+                    saveError = saveError,
+                    onPublish = {
+                        // TODO: call RouteRepository.createRoute from a VM
+                    }
+                )
             }
         }
     }
@@ -278,7 +316,12 @@ private fun StatBox(emoji: String, value: String, label: String, valueColor: Col
 // ── Панель с деталями маршрута ────────────────────────────────
 
 @Composable
-private fun RouteDetailsPanel(route: GeneratedRoute) {
+private fun RouteDetailsPanel(
+    route: GeneratedRoute,
+    isSaving: Boolean = false,
+    saveError: String? = null,
+    onPublish: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -321,6 +364,47 @@ private fun RouteDetailsPanel(route: GeneratedRoute) {
                          color = MaterialTheme.colorScheme.onSurface.copy(0.85f))
                 }
             }
+        }
+
+        Spacer(Modifier.height(16.dp))
+        HorizontalDivider()
+        Spacer(Modifier.height(16.dp))
+
+        if (saveError != null) {
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = MaterialTheme.colorScheme.errorContainer
+            ) {
+                Text(
+                    saveError,
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    fontSize = 13.sp
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+        }
+
+        Button(
+            onClick = onPublish,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isSaving,
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+        ) {
+            if (isSaving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+                Spacer(Modifier.width(8.dp))
+            }
+            Text(
+                if (isSaving) "Сохранение..." else "Опубликовать маршрут",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
 
         Spacer(Modifier.height(16.dp))

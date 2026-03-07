@@ -25,7 +25,8 @@ import com.trail2.ui.components.onboarding.OnboardingButton
 
 @Composable
 fun WelcomeScreen(
-    onContinue: () -> Unit   // → переход к опросу
+    onContinue: () -> Unit,
+    onGoToLogin: () -> Unit = {}
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -96,7 +97,18 @@ fun WelcomeScreen(
                         onClick = onContinue
                     )
 
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(10.dp))
+
+                    TextButton(onClick = onGoToLogin) {
+                        Text(
+                            "Уже есть аккаунт? Войти",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    Spacer(Modifier.height(8.dp))
 
                     // Политика конфиденциальности
                     Text(

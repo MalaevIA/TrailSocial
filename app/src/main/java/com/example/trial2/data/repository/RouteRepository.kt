@@ -1,65 +1,129 @@
 package com.trail2.data.repository
 
 import com.trail2.data.Difficulty
+import com.trail2.data.PaginatedResponse
 import com.trail2.data.TrailRoute
-import com.trail2.data.local.dao.RouteDao
-import com.trail2.data.local.dao.UserDao
-import com.trail2.data.local.toDomain
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import com.trail2.data.remote.ApiResult
+import com.trail2.data.remote.api.RouteApi
+import com.trail2.data.remote.dto.GeoJsonLineStringDto
+import com.trail2.data.remote.dto.RouteCreateDto
+import com.trail2.data.remote.dto.RouteUpdateDto
+import com.trail2.data.remote.dto.WaypointDto
+import com.trail2.data.remote.mappers.toDomain
+import com.trail2.data.remote.safeApiCall
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class RouteRepository @Inject constructor(
-    private val routeDao: RouteDao,
-    private val userDao: UserDao
+    private val routeApi: RouteApi
 ) {
-    fun getAllRoutes(): Flow<List<TrailRoute>> =
-        combine(routeDao.getAll(), userDao.getAll()) { routes, users ->
-            val usersById = users.associateBy { it.id }
-            routes.mapNotNull { route ->
-                val author = usersById[route.authorId] ?: return@mapNotNull null
-                route.toDomain(author.toDomain())
-            }
-        }
-
-    fun getRouteById(id: String): Flow<TrailRoute?> =
-        routeDao.getById(id).map { routeEntity ->
-            routeEntity ?: return@map null
-            // Подгружаем автора — используем combine для реактивности,
-            // но здесь допустимо собрать Flow вручную
-            null // TODO: wire with user DAO in full reactive chain
-        }
-
-    fun getRoutesByRegion(region: String): Flow<List<TrailRoute>> =
-        combine(routeDao.getByRegion(region), userDao.getAll()) { routes, users ->
-            val usersById = users.associateBy { it.id }
-            routes.mapNotNull { route ->
-                val author = usersById[route.authorId] ?: return@mapNotNull null
-                route.toDomain(author.toDomain())
-            }
-        }
-
-    fun getRoutesByDifficulty(difficulty: Difficulty): Flow<List<TrailRoute>> =
-        combine(routeDao.getByDifficulty(difficulty.name), userDao.getAll()) { routes, users ->
-            val usersById = users.associateBy { it.id }
-            routes.mapNotNull { route ->
-                val author = usersById[route.authorId] ?: return@mapNotNull null
-                route.toDomain(author.toDomain())
-            }
-        }
-
-    suspend fun toggleLike(routeId: String, currentlyLiked: Boolean) {
-        val liked = !currentlyLiked
-        val delta = if (liked) 1 else -1
-        routeDao.updateLiked(routeId, liked, delta)
+    suspend fun getRoutes(
+        page: Int = 1,
+        region: String? = null,
+        difficulty: Difficulty? = null,
+        sort: String = "recent",
+        tags: List<String>? = null
+    ): ApiResult<PaginatedResponse<TrailRoute>> = safeApiCall {
+        routeApi.getRoutes(
+            page = page,
+            region = region,
+            difficulty = difficulty?.name?.lowercase(),
+            sort = sort,
+            tags = tags
+        ).toDomain { it.toDomain() }
     }
 
-    suspend fun toggleSave(routeId: String, currentlySaved: Boolean) {
-        val saved = !currentlySaved
-        val delta = if (saved) 1 else -1
-        routeDao.updateSaved(routeId, saved, delta)
+    suspend fun getFeed(page: Int = 1): ApiResult<PaginatedResponse<TrailRoute>> = safeApiCall {
+        routeApi.getFeed(page).toDomain { it.toDomain() }
+    }
+
+    suspend fun getRouteById(routeId: String): ApiResult<TrailRoute> = safeApiCall {
+        routeApi.getRoute(routeId).toDomain()
+    }
+
+    suspend fun createRoute(
+        title: String,
+        description: String? = null,
+        region: String? = null,
+        distanceKm: Double? = null,
+        elevationGainM: Double? = null,
+        durationMinutes: Int? = null,
+        difficulty: String? = null,
+        photos: List<String>? = null,
+        tags: List<String>? = null,
+        status: String = "published",
+        startLat: Double? = null,
+        startLng: Double? = null,
+        endLat: Double? = null,
+        endLng: Double? = null,
+        geometry: GeoJsonLineStringDto? = null,
+        waypoints: List<WaypointDto>? = null
+    ): ApiResult<TrailRoute> = safeApiCall {
+        routeApi.createRoute(
+            RouteCreateDto(
+                title = title,
+                status = status,
+                description = description,
+                region = region,
+                distanceKm = distanceKm,
+                elevationGainM = elevationGainM,
+                durationMinutes = durationMinutes,
+                difficulty = difficulty,
+                photos = photos,
+                tags = tags,
+                startLat = startLat,
+                startLng = startLng,
+                endLat = endLat,
+                endLng = endLng,
+                geometry = geometry,
+                waypoints = waypoints
+            )
+        ).toDomain()
+    }
+
+    suspend fun updateRoute(
+        routeId: String,
+        update: RouteUpdateDto
+    ): ApiResult<TrailRoute> = safeApiCall {
+        routeApi.updateRoute(routeId, update).toDomain()
+    }
+
+    suspend fun deleteRoute(routeId: String): ApiResult<Unit> = safeApiCall {
+        routeApi.deleteRoute(routeId)
+    }
+
+    suspend fun likeRoute(routeId: String): ApiResult<Unit> = safeApiCall {
+        routeApi.likeRoute(routeId)
+    }
+
+    suspend fun unlikeRoute(routeId: String): ApiResult<Unit> = safeApiCall {
+        routeApi.unlikeRoute(routeId)
+    }
+
+    suspend fun saveRoute(routeId: String): ApiResult<Unit> = safeApiCall {
+        routeApi.saveRoute(routeId)
+    }
+
+    suspend fun unsaveRoute(routeId: String): ApiResult<Unit> = safeApiCall {
+        routeApi.unsaveRoute(routeId)
+    }
+
+    suspend fun searchRoutes(
+        query: String,
+        page: Int = 1
+    ): ApiResult<PaginatedResponse<TrailRoute>> = safeApiCall {
+        routeApi.searchRoutes(query, page).toDomain { it.toDomain() }
+    }
+
+    suspend fun searchUsers(
+        query: String,
+        page: Int = 1
+    ) = safeApiCall {
+        routeApi.searchUsers(query, page).toDomain { it.toDomain() }
+    }
+
+    suspend fun getRegions(): ApiResult<List<String>> = safeApiCall {
+        routeApi.getRegions()
     }
 }

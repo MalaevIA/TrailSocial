@@ -14,7 +14,7 @@ val StoneGray = Color(0xFF495057)
 val DarkForest = Color(0xFF1B4332)
 val CreamWhite = Color(0xFFFFFBF5)
 
-val TrailColorScheme = lightColorScheme(
+val TrailLightColorScheme = lightColorScheme(
     primary = ForestGreen,
     onPrimary = Color.White,
     primaryContainer = PaleGreen,
@@ -31,7 +31,31 @@ val TrailColorScheme = lightColorScheme(
     error = Color(0xFFE63946)
 )
 
+val TrailDarkColorScheme = darkColorScheme(
+    primary = MossGreen,
+    onPrimary = DarkForest,
+    primaryContainer = Color(0xFF1B4332),
+    onPrimaryContainer = PaleGreen,
+    secondary = Color(0xFFD4A373),
+    onSecondary = Color(0xFF3E2723),
+    tertiary = Color(0xFF7EB8DA),
+    surface = Color(0xFF1A1C1A),
+    onSurface = Color(0xFFE2E3DF),
+    surfaceVariant = Color(0xFF2C2F2C),
+    onSurfaceVariant = Color(0xFFA0A4A0),
+    background = Color(0xFF111311),
+    outline = Color(0xFF5A5E5A),
+    error = Color(0xFFFF6B6B)
+)
+
+// Keep backward-compatible alias
+val TrailColorScheme = TrailLightColorScheme
+
 @Composable
-fun TrailSocialTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = TrailColorScheme, content = content)
+fun TrailSocialTheme(
+    darkTheme: Boolean = false,
+    content: @Composable () -> Unit
+) {
+    val colorScheme = if (darkTheme) TrailDarkColorScheme else TrailLightColorScheme
+    MaterialTheme(colorScheme = colorScheme, content = content)
 }

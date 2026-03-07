@@ -20,6 +20,7 @@ import com.trail2.onboarding.OnboardingViewModel
 @Composable
 fun OnboardingNavGraph(
     onFinished: () -> Unit,                  // колбэк → переход к основному приложению
+    onGoToLogin: () -> Unit = {},
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -47,7 +48,8 @@ fun OnboardingNavGraph(
     ) { step ->
         when (step) {
             OnboardingStep.WELCOME -> WelcomeScreen(
-                onContinue = { viewModel.nextStep() }
+                onContinue = { viewModel.nextStep() },
+                onGoToLogin = onGoToLogin
             )
 
             OnboardingStep.CITIES -> CitySurveyScreen(
@@ -78,6 +80,7 @@ fun OnboardingNavGraph(
                 state = state,
                 progress = viewModel.progress,
                 onNameChange = { viewModel.onNameChange(it) },
+                onUsernameChange = { viewModel.onUsernameChange(it) },
                 onEmailChange = { viewModel.onEmailChange(it) },
                 onPasswordChange = { viewModel.onPasswordChange(it) },
                 onTogglePasswordVisible = { viewModel.togglePasswordVisible() },

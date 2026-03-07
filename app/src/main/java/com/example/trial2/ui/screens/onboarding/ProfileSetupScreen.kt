@@ -30,6 +30,7 @@ fun ProfileSetupScreen(
     state: OnboardingUiState,
     progress: Float,
     onNameChange: (String) -> Unit,
+    onUsernameChange: (String) -> Unit = {},
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onTogglePasswordVisible: () -> Unit,
@@ -65,6 +66,20 @@ fun ProfileSetupScreen(
                     icon = Icons.Outlined.Person,
                     error = state.nameError,
                     keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next
+                )
+
+                Spacer(Modifier.height(14.dp))
+
+                // ── Имя пользователя ─────────────
+                OnboardingTextField(
+                    value = state.usernameInput,
+                    onValueChange = onUsernameChange,
+                    label = "Имя пользователя",
+                    placeholder = "username (латиница)",
+                    icon = Icons.Outlined.AlternateEmail,
+                    error = state.usernameError,
+                    keyboardType = KeyboardType.Ascii,
                     imeAction = ImeAction.Next
                 )
 

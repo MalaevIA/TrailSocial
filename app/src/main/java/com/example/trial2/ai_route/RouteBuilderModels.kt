@@ -1,10 +1,7 @@
 package com.trail2.ai_route
 
-// ══════════════════════════════════════════════════════════════
-// Файл: ai_route/RouteBuilderModels.kt
-// ══════════════════════════════════════════════════════════════
-
-// ── Варианты ответов для формы ───────────────────────────────
+import com.trail2.data.GeoJsonLineString
+import com.trail2.data.remote.dto.AiGenerateRequestDto
 
 enum class TripPurpose(val label: String, val emoji: String) {
     WALK("Неспешная прогулка", "🚶"),
@@ -54,79 +51,93 @@ enum class Pace(val label: String, val emoji: String) {
     BRISK("Бодрый — двигаемся без остановок", "🏃")
 }
 
-// ── Форма ────────────────────────────────────────────────────
-
 data class RouteBuilderForm(
-    // Шаг 1: Цель и компания
     val purpose: TripPurpose? = null,
     val groupType: GroupType? = null,
-    // Шаг 2: Параметры маршрута
     val duration: TripDuration? = null,
     val distance: TripDistance? = null,
     val pace: Pace? = null,
-    // Шаг 3: Местность и рельеф (мульти-выбор)
     val terrains: Set<Terrain> = emptySet(),
-    // Шаг 4: Текстовые поля
-    val startPoint: String = "",          // адрес / ориентир
-    val mustSeeWishes: String = "",       // "хочу увидеть..."
-    val avoidWishes: String = "",         // "избегать..."
-    // Шаг 5: Доп. пожелания
+    val startPoint: String = "",
+    val mustSeeWishes: String = "",
+    val avoidWishes: String = "",
     val hasPets: Boolean = false,
     val needsCafe: Boolean = false,
     val needsWC: Boolean = false,
-    val accessible: Boolean = false       // маршрут без барьеров
+    val accessible: Boolean = false
 )
 
-// ── Промт, который строим из формы ──────────────────────────
+fun RouteBuilderForm.toApiRequest(): AiGenerateRequestDto {
+    return AiGenerateRequestDto(
+        region = startPoint.ifBlank { null },
+        difficulty = deriveDifficulty(),
+        durationMinutes = duration?.toMinutes(),
+        distanceKm = distance?.toKm(),
+        interests = buildInterestsList().ifEmpty { null },
+        description = buildDescription().ifBlank { null }
+    )
+}
 
-fun RouteBuilderForm.buildPrompt(): String {
-    val sb = StringBuilder()
-    sb.appendLine("Составь пеший маршрут со следующими параметрами:")
-    purpose?.let   { sb.appendLine("Цель: ${it.label}") }
-    groupType?.let { sb.appendLine("Участники: ${it.label}") }
-    duration?.let  { sb.appendLine("Длительность: ${it.label}") }
-    distance?.let  { sb.appendLine("Дистанция: ${it.label}") }
-    pace?.let      { sb.appendLine("Темп: ${it.label}") }
-    if (terrains.isNotEmpty()) sb.appendLine("Рельеф/местность: ${terrains.joinToString { it.label }}")
-    if (startPoint.isNotBlank()) sb.appendLine("Точка старта: $startPoint")
-    if (mustSeeWishes.isNotBlank()) sb.appendLine("Хочу увидеть: $mustSeeWishes")
-    if (avoidWishes.isNotBlank()) sb.appendLine("Избегать: $avoidWishes")
+private fun TripDuration.toMinutes(): Int = when (this) {
+    TripDuration.UNDER_1H -> 45
+    TripDuration.ONE_TWO_H -> 90
+    TripDuration.TWO_FOUR_H -> 180
+    TripDuration.HALF_DAY -> 300
+    TripDuration.FULL_DAY -> 420
+    TripDuration.MULTI_DAY -> 960
+}
+
+private fun TripDistance.toKm(): Double = when (this) {
+    TripDistance.SHORT -> 2.0
+    TripDistance.MEDIUM -> 5.5
+    TripDistance.LONG -> 11.0
+    TripDistance.VERY_LONG -> 20.0
+}
+
+private fun RouteBuilderForm.deriveDifficulty(): String? = when {
+    pace == Pace.BRISK && terrains.contains(Terrain.HILLS) -> "hard"
+    purpose == TripPurpose.SPORT -> "moderate"
+    purpose == TripPurpose.FAMILY || purpose == TripPurpose.WALK -> "easy"
+    terrains.any { it == Terrain.HILLS } -> "moderate"
+    else -> null
+}
+
+private fun RouteBuilderForm.buildInterestsList(): List<String> {
+    val list = mutableListOf<String>()
+    purpose?.let { list.add(it.label) }
+    terrains.forEach { list.add(it.label) }
+    groupType?.let { list.add(it.label) }
+    return list
+}
+
+private fun RouteBuilderForm.buildDescription(): String {
+    val parts = mutableListOf<String>()
+    if (mustSeeWishes.isNotBlank()) parts.add("Хочу увидеть: $mustSeeWishes")
+    if (avoidWishes.isNotBlank()) parts.add("Избегать: $avoidWishes")
+    pace?.let { parts.add("Темп: ${it.label}") }
     val extras = buildList {
         if (hasPets) add("маршрут подходит для собак")
         if (needsCafe) add("желательно кафе/кофейня рядом")
         if (needsWC) add("наличие туалетов")
         if (accessible) add("без ступеней и барьеров")
     }
-    if (extras.isNotEmpty()) sb.appendLine("Доп. требования: ${extras.joinToString(", ")}")
-    sb.appendLine("""
-Верни ТОЛЬКО валидный JSON без markdown, строго в формате:
-{
-  "title": "...",
-  "description": "...",
-  "distance_km": 0.0,
-  "duration_min": 0,
-  "difficulty": "EASY|MODERATE|HARD",
-  "points": [
-    {"lat": 0.0, "lon": 0.0, "title": "...", "description": "...", "type": "start|waypoint|finish"}
-  ],
-  "tips": ["...", "..."],
-  "tags": ["...", "..."]
+    if (extras.isNotEmpty()) parts.add("Доп: ${extras.joinToString(", ")}")
+    return parts.joinToString(". ")
 }
-    """.trimIndent())
-    return sb.toString()
-}
-
-// ── Ответ сервера ────────────────────────────────────────────
 
 data class GeneratedRoute(
     val title: String,
     val description: String,
+    val region: String = "",
     val distanceKm: Double,
+    val elevationGainM: Int = 0,
     val durationMin: Int,
     val difficulty: String,
     val points: List<RoutePoint>,
     val tips: List<String>,
-    val tags: List<String>
+    val tags: List<String>,
+    val highlights: List<String> = emptyList(),
+    val geometry: GeoJsonLineString? = null
 )
 
 data class RoutePoint(
@@ -134,15 +145,8 @@ data class RoutePoint(
     val lon: Double,
     val title: String,
     val description: String,
-    val type: String          // "start" | "waypoint" | "finish"
+    val type: String
 )
-
-// Тело запроса к AI-эндпоинту
-data class AiRouteRequest(
-    val prompt: String
-)
-
-// ── Демо-маршрут (показывается пока нет бэкенда) ─────────────
 
 val DEMO_ROUTE = GeneratedRoute(
     title = "Вдоль Яузы через Сокольники",

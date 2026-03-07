@@ -26,12 +26,11 @@ import com.trail2.ui.theme.*
 fun RouteCard(
     route: TrailRoute,
     onClick: () -> Unit,
+    onLikeClick: () -> Unit = {},
+    onSaveClick: () -> Unit = {},
+    onAuthorClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var liked by remember { mutableStateOf(route.isLiked) }
-    var likeCount by remember { mutableStateOf(route.likesCount) }
-    var saved by remember { mutableStateOf(route.isSaved) }
-
     Card(
         modifier = modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
@@ -41,7 +40,7 @@ fun RouteCard(
         Column {
             // Header
             Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(12.dp).clickable { onAuthorClick() },
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 UserAvatar(colorHex = route.author.avatarUrl, name = route.author.name, size = 38)
@@ -72,7 +71,7 @@ fun RouteCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("📍", fontSize = 12.sp)
                         Spacer(Modifier.width(3.dp))
-                        Text(route.location.take(30), fontSize = 12.sp, color = Color.White.copy(0.9f))
+                        Text(route.region.take(30), fontSize = 12.sp, color = Color.White.copy(0.9f))
                     }
                 }
             }
@@ -84,8 +83,8 @@ fun RouteCard(
             ) {
                 RouteStatItem("📏", "${route.distanceKm} км")
                 RouteStatItem("⛰️", "+${route.elevationGainM} м")
-                RouteStatItem("⏱️", formatDuration(route.durationHours))
-                RouteStatItem("⭐", route.rating.toString())
+                RouteStatItem("⏱️", formatDurationMinutes(route.durationMinutes))
+                RouteStatItem("💪", difficultyShortLabel(route.difficulty))
             }
 
             // Description
@@ -117,18 +116,18 @@ fun RouteCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ActionButton(
-                    icon = if (liked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    tint = if (liked) Color(0xFFE63946) else MaterialTheme.colorScheme.onSurfaceVariant,
-                    label = formatCount(likeCount),
-                    onClick = { liked = !liked; likeCount = if (liked) likeCount + 1 else likeCount - 1 }
+                    icon = if (route.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    tint = if (route.isLiked) Color(0xFFE63946) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    label = formatCount(route.likesCount),
+                    onClick = onLikeClick
                 )
-                ActionButton(Icons.Outlined.Person, MaterialTheme.colorScheme.onSurfaceVariant, formatCount(route.commentsCount)) { onClick() }
+                ActionButton(Icons.Outlined.ChatBubbleOutline, MaterialTheme.colorScheme.onSurfaceVariant, formatCount(route.commentsCount)) { onClick() }
                 ActionButton(Icons.Outlined.Share, MaterialTheme.colorScheme.onSurfaceVariant, "Поделиться") {}
                 ActionButton(
-                    icon = if (saved) Icons.Filled.AccountBox else Icons.Outlined.AccountBox,
-                    tint = if (saved) ForestGreen else MaterialTheme.colorScheme.onSurfaceVariant,
-                    label = if (saved) "Сохранено" else "Сохранить",
-                    onClick = { saved = !saved }
+                    icon = if (route.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                    tint = if (route.isSaved) ForestGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                    label = if (route.isSaved) "Сохранено" else "Сохранить",
+                    onClick = onSaveClick
                 )
             }
         }
@@ -183,10 +182,17 @@ fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, tint: Co
     }
 }
 
-fun formatDuration(hours: Double): String = when {
-    hours < 1 -> "${(hours * 60).toInt()} мин"
-    hours < 24 -> "${hours.toInt()} ч"
-    else -> "${(hours / 24).toInt()} дн"
+fun formatDurationMinutes(minutes: Int): String = when {
+    minutes < 60 -> "${minutes} мин"
+    minutes < 1440 -> "${minutes / 60} ч"
+    else -> "${minutes / 1440} дн"
+}
+
+fun difficultyShortLabel(d: Difficulty): String = when (d) {
+    Difficulty.EASY -> "Лёгкий"
+    Difficulty.MODERATE -> "Средний"
+    Difficulty.HARD -> "Сложный"
+    Difficulty.EXPERT -> "Эксперт"
 }
 
 fun formatCount(count: Int): String = if (count >= 1000) "${count / 1000}.${(count % 1000) / 100}к" else count.toString()

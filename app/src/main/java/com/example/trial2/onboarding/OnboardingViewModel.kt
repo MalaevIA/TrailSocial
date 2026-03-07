@@ -2,6 +2,8 @@ package com.trail2.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.trail2.data.remote.ApiResult
+import com.trail2.data.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -20,21 +22,23 @@ data class OnboardingUiState(
     val nameInput: String = "",
     val emailInput: String = "",
     val passwordInput: String = "",
+    val usernameInput: String = "",
     val passwordVisible: Boolean = false,
     val nameError: String? = null,
     val emailError: String? = null,
-    val passwordError: String? = null
+    val passwordError: String? = null,
+    val usernameError: String? = null
 )
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    private val repo: OnboardingRepository
+    private val repo: OnboardingRepository,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
     val uiState: StateFlow<OnboardingUiState> = _uiState.asStateFlow()
 
-    // null = ещё загружается из DataStore
     private val _isOnboardingCompleted = MutableStateFlow<Boolean?>(null)
     val isOnboardingCompleted: StateFlow<Boolean?> = _isOnboardingCompleted.asStateFlow()
 
@@ -49,8 +53,6 @@ class OnboardingViewModel @Inject constructor(
             }
         }
     }
-
-    // ── Навигация ─────────────────────────────────
 
     fun nextStep() {
         val next = when (_uiState.value.step) {
@@ -74,8 +76,6 @@ class OnboardingViewModel @Inject constructor(
         _uiState.update { it.copy(step = prev, error = null) }
     }
 
-    // ── Выбор данных ──────────────────────────────
-
     fun toggleCity(cityId: String) {
         val current = _uiState.value.answers.selectedCityIds.toMutableList()
         if (cityId in current) current.remove(cityId) else current.add(cityId)
@@ -92,29 +92,45 @@ class OnboardingViewModel @Inject constructor(
         _uiState.update { it.copy(answers = it.answers.copy(selectedInterestIds = current)) }
     }
 
-    // ── Поля профиля ──────────────────────────────
-
     fun onNameChange(v: String) = _uiState.update { it.copy(nameInput = v, nameError = null) }
     fun onEmailChange(v: String) = _uiState.update { it.copy(emailInput = v, emailError = null) }
     fun onPasswordChange(v: String) = _uiState.update { it.copy(passwordInput = v, passwordError = null) }
+    fun onUsernameChange(v: String) = _uiState.update { it.copy(usernameInput = v, usernameError = null) }
     fun togglePasswordVisible() = _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
-
-    // ── Финал ─────────────────────────────────────
 
     fun finishOnboarding() {
         if (!validateProfile()) return
         val state = _uiState.value
         val finalAnswers = state.answers.copy(
             displayName = state.nameInput.trim(),
-            email       = state.emailInput.trim(),
-            password    = state.passwordInput
+            email = state.emailInput.trim(),
+            password = state.passwordInput
         )
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             repo.saveAnswers(finalAnswers)
-            repo.markCompleted()
-            _isOnboardingCompleted.value = true
-            _uiState.update { it.copy(isLoading = false, isCompleted = true) }
+
+            val username = state.usernameInput.trim().ifBlank {
+                state.nameInput.trim().lowercase().replace(" ", "_")
+            }
+            when (val result = authRepository.signup(
+                username = username,
+                email = state.emailInput.trim(),
+                password = state.passwordInput,
+                displayName = state.nameInput.trim()
+            )) {
+                is ApiResult.Success -> {
+                    repo.markCompleted()
+                    _isOnboardingCompleted.value = true
+                    _uiState.update { it.copy(isLoading = false, isCompleted = true) }
+                }
+                is ApiResult.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = result.message) }
+                }
+                is ApiResult.NetworkError -> {
+                    _uiState.update { it.copy(isLoading = false, error = "Нет подключения к интернету") }
+                }
+            }
         }
     }
 
@@ -128,6 +144,7 @@ class OnboardingViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
+            authRepository.logout()
             repo.clearAll()
             _isOnboardingCompleted.value = false
             _uiState.update { OnboardingUiState() }

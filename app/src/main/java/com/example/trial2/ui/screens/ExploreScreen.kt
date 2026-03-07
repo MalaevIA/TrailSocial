@@ -18,25 +18,29 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.trail2.data.SampleData
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ui.components.DifficultyBadge
 import com.trail2.ui.theme.ForestGreen
+import com.trail2.ui.viewmodels.ExploreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ExploreScreen(onRouteClick: (String) -> Unit) {
-    var searchQuery by remember { mutableStateOf("") }
-    val routes = SampleData.routes
+fun ExploreScreen(
+    onRouteClick: (String) -> Unit,
+    onUserClick: (String) -> Unit = {},
+    vm: ExploreViewModel = hiltViewModel()
+) {
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Search bar
         Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text("Поиск маршрутов", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = ForestGreen)
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    value = uiState.query,
+                    onValueChange = vm::onQueryChange,
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Урал, Кавказ, Алтай...") },
                     leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = ForestGreen) },
@@ -46,60 +50,86 @@ fun ExploreScreen(onRouteClick: (String) -> Unit) {
             }
         }
 
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                Text("Популярные регионы", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                Spacer(Modifier.height(8.dp))
+        if (uiState.isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (uiState.query.isBlank()) {
+                    item {
+                        Text("Популярные регионы", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        Spacer(Modifier.height(8.dp))
+                    }
 
-            item {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier.height(300.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(regionCards.size) { i ->
-                        val (region, color, count) = regionCards[i]
-                        RegionCard(region, color, count) {}
+                    val regionColors = listOf("2D6A4F", "E76F51", "457B9D", "E63946", "264653", "6D6875")
+                    val regions = if (uiState.regions.isNotEmpty()) uiState.regions else defaultRegions
+
+                    item {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.height(300.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(regions.size.coerceAtMost(6)) { i ->
+                                RegionCard(
+                                    region = regions[i],
+                                    colorHex = regionColors[i % regionColors.size],
+                                    onClick = { vm.searchByRegion(regions[i]) }
+                                )
+                            }
+                        }
                     }
                 }
+
+                if (uiState.users.isNotEmpty()) {
+                    item {
+                        Text("Пользователи", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                    }
+                    items(uiState.users.size) { i ->
+                        val user = uiState.users[i]
+                        Card(
+                            modifier = Modifier.fillMaxWidth().clickable { onUserClick(user.id) },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(user.name, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                                Text("@${user.username}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        if (uiState.query.isBlank()) "Все маршруты" else "Результаты",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                items(uiState.routes.size) { i ->
+                    val route = uiState.routes[i]
+                    ExploreRouteRow(route = route, onClick = { onRouteClick(route.id) })
+                }
+
+                item { Spacer(Modifier.height(80.dp)) }
             }
-
-            item {
-                Spacer(Modifier.height(8.dp))
-                Text("Все маршруты", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                Spacer(Modifier.height(8.dp))
-            }
-
-            val filtered = if (searchQuery.isBlank()) routes
-            else routes.filter { it.title.contains(searchQuery, true) || it.region.contains(searchQuery, true) || it.tags.any { t -> t.contains(searchQuery, true) } }
-
-            items(filtered.size) { i ->
-                val route = filtered[i]
-                ExploreRouteRow(route = route, onClick = { onRouteClick(route.id) })
-            }
-
-            item { Spacer(Modifier.height(80.dp)) }
         }
     }
 }
 
-val regionCards = listOf(
-    Triple("Урал", "2D6A4F", "12 маршрутов"),
-    Triple("Кавказ", "E76F51", "28 маршрутов"),
-    Triple("Алтай", "457B9D", "19 маршрутов"),
-    Triple("Камчатка", "E63946", "7 маршрутов"),
-    Triple("Карелия", "264653", "15 маршрутов"),
-    Triple("Сибирь", "6D6875", "9 маршрутов")
-)
+private val defaultRegions = listOf("Урал", "Кавказ", "Алтай", "Камчатка", "Карелия", "Сибирь")
 
 @Composable
-fun RegionCard(region: String, colorHex: String, count: String, onClick: () -> Unit) {
-    val color = try { Color(android.graphics.Color.parseColor("#$colorHex")) } catch (e: Exception) { ForestGreen }
+fun RegionCard(region: String, colorHex: String, onClick: () -> Unit) {
+    val color = try { Color(android.graphics.Color.parseColor("#$colorHex")) } catch (_: Exception) { ForestGreen }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -111,14 +141,13 @@ fun RegionCard(region: String, colorHex: String, count: String, onClick: () -> U
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
             Text(region, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(count, color = Color.White.copy(0.8f), fontSize = 11.sp)
         }
     }
 }
 
 @Composable
 fun ExploreRouteRow(route: com.trail2.data.TrailRoute, onClick: () -> Unit) {
-    val photoColor = try { Color(android.graphics.Color.parseColor("#${route.photos.first()}")) } catch (e: Exception) { ForestGreen }
+    val photoColor = try { Color(android.graphics.Color.parseColor("#${route.photos.firstOrNull()}")) } catch (_: Exception) { ForestGreen }
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
@@ -137,7 +166,6 @@ fun ExploreRouteRow(route: com.trail2.data.TrailRoute, onClick: () -> Unit) {
                 Spacer(Modifier.height(4.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("📏 ${route.distanceKm}км", fontSize = 11.sp)
-                    Text("⭐ ${route.rating}", fontSize = 11.sp)
                     Text("❤️ ${route.likesCount}", fontSize = 11.sp)
                 }
             }
