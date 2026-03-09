@@ -6,9 +6,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.trail2.R
 import com.trail2.onboarding.OnboardingData
 import com.trail2.ui.components.onboarding.OnboardingButton
 import com.trail2.ui.components.onboarding.OnboardingTopBar
@@ -38,8 +40,8 @@ fun InterestsScreen(
         ) {
             StepTitle(
                 emoji = "✨",
-                title = "Что вас интересует?",
-                subtitle = "Отметьте темы — будем показывать подходящие маршруты"
+                title = stringResource(R.string.interests_title),
+                subtitle = stringResource(R.string.interests_subtitle)
             )
 
             Spacer(Modifier.height(16.dp))
@@ -72,8 +74,7 @@ fun InterestsScreen(
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Text(
-                        "Отлично! Выбрано ${selectedInterestIds.size} интереса. " +
-                                "На основе этого подберём лучшие маршруты.",
+                        stringResource(R.string.interests_great, selectedInterestIds.size),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.padding(14.dp),
@@ -89,7 +90,7 @@ fun InterestsScreen(
             Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
                 if (selectedInterestIds.isNotEmpty()) {
                     Text(
-                        "Выбрано: ${selectedInterestIds.size}",
+                        stringResource(R.string.interests_selected, selectedInterestIds.size),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium,
@@ -97,7 +98,7 @@ fun InterestsScreen(
                     )
                 }
                 OnboardingButton(
-                    text = if (selectedInterestIds.isEmpty()) "Пропустить" else "Продолжить",
+                    text = if (selectedInterestIds.isEmpty()) stringResource(R.string.skip) else stringResource(R.string.continue_btn),
                     onClick = onNext
                 )
             }

@@ -11,8 +11,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
+import com.trail2.R
 
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,8 +51,8 @@ fun ProfileSetupScreen(
         ) {
             StepTitle(
                 emoji = "👤",
-                title = "Создайте профиль",
-                subtitle = "Чтобы делиться маршрутами и общаться с сообществом"
+                title = stringResource(R.string.setup_title),
+                subtitle = stringResource(R.string.setup_subtitle)
             )
 
             Spacer(Modifier.height(20.dp))
@@ -61,8 +63,8 @@ fun ProfileSetupScreen(
                 OnboardingTextField(
                     value = state.nameInput,
                     onValueChange = onNameChange,
-                    label = "Ваше имя",
-                    placeholder = "Как вас зовут?",
+                    label = stringResource(R.string.setup_name),
+                    placeholder = stringResource(R.string.setup_name_hint),
                     icon = Icons.Outlined.Person,
                     error = state.nameError,
                     keyboardType = KeyboardType.Text,
@@ -75,8 +77,8 @@ fun ProfileSetupScreen(
                 OnboardingTextField(
                     value = state.usernameInput,
                     onValueChange = onUsernameChange,
-                    label = "Имя пользователя",
-                    placeholder = "username (латиница)",
+                    label = stringResource(R.string.setup_username),
+                    placeholder = stringResource(R.string.setup_username_hint),
                     icon = Icons.Outlined.AlternateEmail,
                     error = state.usernameError,
                     keyboardType = KeyboardType.Ascii,
@@ -89,8 +91,8 @@ fun ProfileSetupScreen(
                 OnboardingTextField(
                     value = state.emailInput,
                     onValueChange = onEmailChange,
-                    label = "Email",
-                    placeholder = "your@email.com",
+                    label = stringResource(R.string.setup_email),
+                    placeholder = stringResource(R.string.setup_email_hint),
                     icon = Icons.Outlined.Email,
                     error = state.emailError,
                     keyboardType = KeyboardType.Email,
@@ -104,15 +106,15 @@ fun ProfileSetupScreen(
                     value = state.passwordInput,
                     onValueChange = onPasswordChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Пароль") },
-                    placeholder = { Text("Минимум 6 символов") },
+                    label = { Text(stringResource(R.string.setup_password)) },
+                    placeholder = { Text(stringResource(R.string.setup_password_hint)) },
                     leadingIcon = { Icon(Icons.Outlined.Lock, null) },
                     trailingIcon = {
                         IconButton(onClick = onTogglePasswordVisible) {
                             Icon(
                                 if (state.passwordVisible) Icons.Outlined.VisibilityOff
                                 else Icons.Outlined.Visibility,
-                                contentDescription = "Показать пароль"
+                                contentDescription = stringResource(R.string.setup_show_password)
                             )
                         }
                     },
@@ -157,7 +159,7 @@ fun ProfileSetupScreen(
         Surface(shadowElevation = 8.dp) {
             Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
                 OnboardingButton(
-                    text = if (state.isLoading) "Создаём профиль..." else "Зарегистрироваться",
+                    text = if (state.isLoading) stringResource(R.string.setup_registering) else stringResource(R.string.setup_register),
                     onClick = onFinish,
                     enabled = !state.isLoading
                 )
@@ -169,7 +171,7 @@ fun ProfileSetupScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        "Войти позже / использовать без аккаунта",
+                        stringResource(R.string.setup_skip),
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -219,18 +221,18 @@ private fun SurveySummaryCard(state: OnboardingUiState) {
         color = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
-            Text("Ваши предпочтения", fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+            Text(stringResource(R.string.setup_preferences), fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
                  color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
 
             if (state.answers.selectedCityIds.isNotEmpty()) {
-                SummaryRow(emoji = "📍", text = "${state.answers.selectedCityIds.size} город(а) выбрано")
+                SummaryRow(emoji = "📍", text = stringResource(R.string.setup_cities_selected, state.answers.selectedCityIds.size))
             }
             if (state.answers.fitnessLevel != null) {
                 SummaryRow(emoji = state.answers.fitnessLevel.emoji, text = state.answers.fitnessLevel.label)
             }
             if (state.answers.selectedInterestIds.isNotEmpty()) {
-                SummaryRow(emoji = "✨", text = "${state.answers.selectedInterestIds.size} интереса выбрано")
+                SummaryRow(emoji = "✨", text = stringResource(R.string.setup_interests_selected, state.answers.selectedInterestIds.size))
             }
         }
     }

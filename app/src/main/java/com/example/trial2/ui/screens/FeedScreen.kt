@@ -16,11 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.data.Difficulty
 import com.trail2.ui.components.RouteCard
+import com.trail2.R
 import com.trail2.ui.theme.ForestGreen
 import com.trail2.ui.viewmodels.FeedViewModel
 import com.trail2.ui.viewmodels.NotificationViewModel
@@ -39,11 +41,19 @@ fun FeedScreen(
     val uiState by feedVm.uiState.collectAsStateWithLifecycle()
     val notifState by notifVm.uiState.collectAsStateWithLifecycle()
 
-    val filters = listOf("Все", "Лёгкие", "Сложные", "Выходного дня")
-    val selectedFilter = when (uiState.filterDifficulty) {
-        Difficulty.EASY -> "Лёгкие"
-        Difficulty.HARD, Difficulty.EXPERT -> "Сложные"
-        else -> "Все"
+    val filterLabels = listOf(
+        stringResource(R.string.filter_all),
+        stringResource(R.string.filter_easy),
+        stringResource(R.string.filter_moderate),
+        stringResource(R.string.filter_hard),
+        stringResource(R.string.filter_expert)
+    )
+    val selectedFilterIndex = when (uiState.filterDifficulty) {
+        Difficulty.EASY -> 1
+        Difficulty.MODERATE -> 2
+        Difficulty.HARD -> 3
+        Difficulty.EXPERT -> 4
+        else -> 0
     }
 
     val listState = rememberLazyListState()
@@ -59,16 +69,16 @@ fun FeedScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("TrailSocial", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = ForestGreen)
-                        Text("Маршруты рядом с вами", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.feed_title), fontWeight = FontWeight.Bold, fontSize = 22.sp, color = ForestGreen)
+                        Text(stringResource(R.string.feed_subtitle), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 actions = {
                     IconButton(onClick = onCreateRouteClick) {
-                        Icon(Icons.Default.Add, contentDescription = "Создать маршрут")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.feed_create_route))
                     }
                     IconButton(onClick = onSearchClick) {
-                        Icon(Icons.Outlined.Search, contentDescription = "Поиск")
+                        Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.feed_search))
                     }
                     IconButton(onClick = onNotificationsClick) {
                         BadgedBox(badge = {
@@ -76,7 +86,7 @@ fun FeedScreen(
                                 Badge { Text("${notifState.unreadCount}") }
                             }
                         }) {
-                            Icon(Icons.Filled.Notifications, contentDescription = "Уведомления")
+                            Icon(Icons.Filled.Notifications, contentDescription = stringResource(R.string.feed_notifications))
                         }
                     }
                 },
@@ -99,7 +109,7 @@ fun FeedScreen(
                 Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
                     Text(uiState.error!!, color = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(8.dp))
-                    Button(onClick = feedVm::loadRoutes) { Text("Повторить") }
+                    Button(onClick = feedVm::loadRoutes) { Text(stringResource(R.string.retry)) }
                 }
             }
         } else {
@@ -111,13 +121,16 @@ fun FeedScreen(
             ) {
                 item {
                     FilterChipsRow(
-                        filters = filters,
-                        selectedFilter = selectedFilter,
+                        filters = filterLabels,
+                        selectedFilter = filterLabels[selectedFilterIndex],
                         onFilterSelected = { filter ->
+                            val index = filterLabels.indexOf(filter)
                             feedVm.setFilter(
-                                when (filter) {
-                                    "Лёгкие" -> Difficulty.EASY
-                                    "Сложные" -> Difficulty.HARD
+                                when (index) {
+                                    1 -> Difficulty.EASY
+                                    2 -> Difficulty.MODERATE
+                                    3 -> Difficulty.HARD
+                                    4 -> Difficulty.EXPERT
                                     else -> null
                                 }
                             )

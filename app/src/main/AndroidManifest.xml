@@ -3,6 +3,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <application
         android:name=".App"
         android:allowBackup="true"
@@ -16,9 +18,6 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:theme="@style/Theme.Trial2">
 
-        <meta-data
-            android:name="com.yandex.android.maps.YANDEX_MAP_KIT_API_KEY"
-            android:value="BuildConfig.YANDEX_MAPKIT_KEY" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

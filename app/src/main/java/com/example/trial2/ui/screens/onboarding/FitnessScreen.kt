@@ -12,9 +12,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.trail2.R
 import com.trail2.onboarding.FitnessLevel
 import com.trail2.ui.components.onboarding.OnboardingButton
 import com.trail2.ui.components.onboarding.OnboardingTopBar
@@ -43,8 +45,8 @@ fun FitnessScreen(
         ) {
             StepTitle(
                 emoji = "💪",
-                title = "Уровень физической подготовки",
-                subtitle = "Подберём маршруты, которые вам понравятся и будут по силам"
+                title = stringResource(R.string.fitness_title),
+                subtitle = stringResource(R.string.fitness_subtitle)
             )
 
             Spacer(Modifier.height(20.dp))
@@ -64,7 +66,7 @@ fun FitnessScreen(
         Surface(shadowElevation = 8.dp) {
             Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)) {
                 OnboardingButton(
-                    text = if (selectedLevel == null) "Пропустить" else "Продолжить",
+                    text = if (selectedLevel == null) stringResource(R.string.skip) else stringResource(R.string.continue_btn),
                     onClick = onNext
                 )
             }

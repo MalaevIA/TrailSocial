@@ -21,7 +21,7 @@ enum class BuilderStep(val title: String, val stepNum: Int) {
 
 sealed class RouteBuilderScreenState {
     object Form : RouteBuilderScreenState()
-    object Loading : RouteBuilderScreenState()
+    data class Loading(val pollCount: Int = 0) : RouteBuilderScreenState()
     data class Result(val route: GeneratedRoute) : RouteBuilderScreenState()
     data class Error(val message: String) : RouteBuilderScreenState()
 }
@@ -67,6 +67,10 @@ class RouteBuilderViewModel @Inject constructor(
         _state.update { it.copy(screenState = RouteBuilderScreenState.Form, stepError = null) }
     }
 
+    fun resetFully() {
+        _state.value = RouteBuilderUiState()
+    }
+
     // ── Обновление формы ─────────────────────────────────────
 
     fun setPurpose(v: TripPurpose) = updateForm { copy(purpose = v) }
@@ -95,8 +99,15 @@ class RouteBuilderViewModel @Inject constructor(
 
     private fun generate() {
         viewModelScope.launch {
-            _state.update { it.copy(screenState = RouteBuilderScreenState.Loading) }
-            val result = repo.generateRoute(_state.value.form)
+            _state.update { it.copy(screenState = RouteBuilderScreenState.Loading(0)) }
+
+            val result = repo.generateRoute(
+                form = _state.value.form,
+                onPollProgress = { pollNumber ->
+                    _state.update { it.copy(screenState = RouteBuilderScreenState.Loading(pollNumber)) }
+                }
+            )
+
             _state.update {
                 it.copy(
                     screenState = if (result.isSuccess)

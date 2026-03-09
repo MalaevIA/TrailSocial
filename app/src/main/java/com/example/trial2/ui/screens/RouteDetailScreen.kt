@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -21,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.trail2.R
 import com.trail2.data.Difficulty
 import com.trail2.ui.components.*
 import com.trail2.ui.components.RouteMapView
@@ -53,9 +55,9 @@ fun RouteDetailScreen(
     if (route == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(uiState.error ?: "Маршрут не найден")
+                Text(uiState.error ?: stringResource(R.string.route_not_found))
                 Spacer(Modifier.height(8.dp))
-                Button(onClick = onBack) { Text("Назад") }
+                Button(onClick = onBack) { Text(stringResource(R.string.back)) }
             }
         }
         return
@@ -69,14 +71,14 @@ fun RouteDetailScreen(
                 title = { Text(route.title, maxLines = 1, fontSize = 16.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = vm::toggleSave) {
                         Icon(
                             if (route.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                            contentDescription = "Сохранить",
+                            contentDescription = stringResource(R.string.save),
                             tint = if (route.isSaved) ForestGreen else MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -91,9 +93,9 @@ fun RouteDetailScreen(
                             putExtra(Intent.EXTRA_TEXT, shareText)
                             type = "text/plain"
                         }
-                        context.startActivity(Intent.createChooser(sendIntent, "Поделиться маршрутом"))
+                        context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.route_share_title)))
                     }) {
-                        Icon(Icons.Outlined.Share, contentDescription = "Поделиться")
+                        Icon(Icons.Outlined.Share, contentDescription = stringResource(R.string.share))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -109,7 +111,7 @@ fun RouteDetailScreen(
                         value = uiState.commentText,
                         onValueChange = vm::onCommentTextChange,
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Добавить комментарий...", fontSize = 14.sp) },
+                        placeholder = { Text(stringResource(R.string.route_add_comment), fontSize = 14.sp) },
                         maxLines = 2,
                         shape = RoundedCornerShape(24.dp)
                     )
@@ -118,7 +120,7 @@ fun RouteDetailScreen(
                         enabled = !uiState.isSendingComment,
                         modifier = Modifier.clip(CircleShape).background(ForestGreen).size(48.dp)
                     ) {
-                        Icon(Icons.Filled.Send, contentDescription = "Отправить", tint = Color.White)
+                        Icon(Icons.Filled.Send, contentDescription = stringResource(R.string.send), tint = Color.White)
                     }
                 }
             }
@@ -195,7 +197,7 @@ fun RouteDetailScreen(
                         shape = RoundedCornerShape(20.dp)
                     ) {
                         Text(
-                            if (route.author.isFollowing) "Отписаться" else "Подписаться",
+                            if (route.author.isFollowing) stringResource(R.string.route_unsubscribe) else stringResource(R.string.route_subscribe),
                             fontSize = 12.sp
                         )
                     }

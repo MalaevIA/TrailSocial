@@ -14,8 +14,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.trail2.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.FollowListType
 import com.trail2.ui.viewmodels.UserProfileViewModel
@@ -39,7 +41,7 @@ fun UserProfileScreen(
                 title = { Text(uiState.user?.name ?: "") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -88,18 +90,18 @@ fun UserProfileScreen(
                             modifier = Modifier.clickable { onFollowListClick(user.id, FollowListType.FOLLOWERS) }
                         ) {
                             Text("${user.followersCount}", fontWeight = FontWeight.Bold)
-                            Text("Подписчики", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.profile_followers), style = MaterialTheme.typography.bodySmall)
                         }
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.clickable { onFollowListClick(user.id, FollowListType.FOLLOWING) }
                         ) {
                             Text("${user.followingCount}", fontWeight = FontWeight.Bold)
-                            Text("Подписки", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.profile_following), style = MaterialTheme.typography.bodySmall)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("${user.routesCount}", fontWeight = FontWeight.Bold)
-                            Text("Маршруты", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.profile_routes), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                     Spacer(Modifier.height(12.dp))
@@ -112,14 +114,14 @@ fun UserProfileScreen(
                             ButtonDefaults.buttonColors(),
                         modifier = Modifier.fillMaxWidth(0.6f)
                     ) {
-                        Text(if (user.isFollowing) "Отписаться" else "Подписаться")
+                        Text(if (user.isFollowing) stringResource(R.string.route_unsubscribe) else stringResource(R.string.route_subscribe))
                     }
                 }
             }
 
             if (uiState.routes.isNotEmpty()) {
                 item {
-                    Text("Маршруты", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.user_routes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
                 items(uiState.routes) { route ->
                     Card(

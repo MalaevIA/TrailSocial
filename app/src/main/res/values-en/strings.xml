@@ -1,0 +1,239 @@
+<resources>
+    <string name="app_name">TrailSocial</string>
+
+    <!-- Bottom navigation tabs -->
+    <string name="tab_feed">Feed</string>
+    <string name="tab_explore">Explore</string>
+    <string name="tab_ai_route">AI Route</string>
+    <string name="tab_profile">Profile</string>
+
+    <!-- Common -->
+    <string name="back">Back</string>
+    <string name="retry">Retry</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="share">Share</string>
+    <string name="delete">Delete</string>
+    <string name="add">Add</string>
+    <string name="done">Done</string>
+    <string name="clear">Clear</string>
+    <string name="edit">Edit</string>
+    <string name="skip">Skip</string>
+    <string name="continue_btn">Continue</string>
+    <string name="empty">Empty</string>
+    <string name="send">Send</string>
+
+    <!-- Difficulty levels -->
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_medium">Medium</string>
+    <string name="difficulty_hard">Hard</string>
+    <string name="difficulty_expert">Expert</string>
+    <string name="difficulty_expert_short">Expert</string>
+
+    <!-- Time formatting -->
+    <string name="time_minutes">%d min</string>
+    <string name="time_hours">%d h</string>
+    <string name="time_hours_minutes">%d h %d min</string>
+
+    <!-- Feed screen -->
+    <string name="feed_title">TrailSocial</string>
+    <string name="feed_subtitle">Routes near you</string>
+    <string name="feed_create_route">Create route</string>
+    <string name="feed_search">Search</string>
+    <string name="feed_notifications">Notifications</string>
+    <string name="filter_all">All</string>
+    <string name="filter_easy">Easy</string>
+    <string name="filter_moderate">Moderate</string>
+    <string name="filter_hard">Hard</string>
+    <string name="filter_expert">Expert</string>
+
+    <!-- Explore screen -->
+    <string name="explore_search">Search routes</string>
+    <string name="explore_search_placeholder">Ural, Caucasus, Altai…</string>
+    <string name="explore_popular_regions">Popular regions</string>
+    <string name="explore_users">Users</string>
+    <string name="explore_all_routes">All routes</string>
+    <string name="explore_results">Results</string>
+    <string name="region_ural">Ural</string>
+    <string name="region_caucasus">Caucasus</string>
+    <string name="region_altai">Altai</string>
+    <string name="region_kamchatka">Kamchatka</string>
+    <string name="region_karelia">Karelia</string>
+    <string name="region_siberia">Siberia</string>
+
+    <!-- Route Builder screen -->
+    <string name="builder_title">AI Route</string>
+    <string name="builder_step_format">Step %1$d of %2$d — %3$s</string>
+    <string name="builder_goal_title">What is the goal of the walk?</string>
+    <string name="builder_goal_subtitle">Choose one option</string>
+    <string name="builder_company_title">Who are you going with?</string>
+    <string name="builder_time_title">How much time do you have?</string>
+    <string name="builder_distance_title">Desired distance</string>
+    <string name="builder_distance_subtitle">How far are you willing to walk</string>
+    <string name="builder_pace_title">Walking pace</string>
+    <string name="builder_terrain_title">What terrain do you prefer?</string>
+    <string name="builder_terrain_subtitle">You can select multiple</string>
+    <string name="builder_terrain_selected">Selected: %s</string>
+    <string name="builder_details_title">Route details</string>
+    <string name="builder_details_subtitle">Specify your preferences</string>
+    <string name="builder_start_point">Starting point *</string>
+    <string name="builder_start_hint">District name, metro station, address…</string>
+    <string name="builder_want_to_see">Want to see / visit</string>
+    <string name="builder_want_to_see_hint">Park, pond, old church, graffiti…</string>
+    <string name="builder_avoid">What to avoid</string>
+    <string name="builder_avoid_hint">Busy roads, steep climbs, construction sites…</string>
+    <string name="builder_extra_title">Additional options</string>
+    <string name="builder_extra_subtitle">Optional, but helps refine the route</string>
+    <string name="builder_dog_friendly">Dog-friendly route</string>
+    <string name="builder_cafe_nearby">Cafe / coffee shop nearby preferred</string>
+    <string name="builder_toilets">Restrooms available</string>
+    <string name="builder_accessible">Step-free and barrier-free</string>
+    <string name="builder_ai_hint">After pressing \"Generate\", AI will create a route tailored to you based on your answers</string>
+    <string name="builder_back">Back</string>
+    <string name="builder_generate">Generate route</string>
+    <string name="builder_next">Next</string>
+    <string name="builder_generating">AI is building your route…</string>
+    <string name="builder_generating_wait">This may take a few seconds</string>
+    <string name="builder_error">Failed to create route</string>
+    <string name="builder_try_again">Try again</string>
+
+    <!-- Profile screen -->
+    <string name="profile_default_title">Traveler</string>
+    <string name="profile_settings">Settings</string>
+    <string name="profile_routes">Routes</string>
+    <string name="profile_followers">Followers</string>
+    <string name="profile_following">Following</string>
+    <string name="profile_my_cities">My cities</string>
+    <string name="profile_interests">Interests</string>
+    <string name="profile_about">About me</string>
+    <string name="profile_logout">Log out</string>
+    <string name="profile_logout_confirm">Log out?</string>
+    <string name="profile_logout_message">You will be redirected to the login screen.</string>
+    <string name="profile_logout_action">Log out</string>
+
+    <!-- Route Detail screen -->
+    <string name="route_not_found">Route not found</string>
+    <string name="route_share_title">Share route</string>
+    <string name="route_add_comment">Add a comment…</string>
+    <string name="route_subscribe">Follow</string>
+    <string name="route_unsubscribe">Unfollow</string>
+    <string name="route_comments_likes">%1$d comments · %2$d likes</string>
+    <string name="route_characteristics">Route characteristics</string>
+    <string name="route_description">Description</string>
+    <string name="route_tags">Tags</string>
+    <string name="route_comments">Comments (%d)</string>
+    <string name="route_no_comments">No comments yet</string>
+
+    <!-- Route Create screen -->
+    <string name="create_title">New route</string>
+    <string name="create_name">Name *</string>
+    <string name="create_description">Description</string>
+    <string name="create_region">Region</string>
+    <string name="create_map_route">Route on map *</string>
+    <string name="create_map_info">%1$.1f km · %2$d points</string>
+    <string name="create_draw_route">Draw route on map</string>
+    <string name="create_time">Time (min)</string>
+    <string name="create_difficulty">Difficulty</string>
+    <string name="create_tags">Tags</string>
+    <string name="create_new_tag">New tag</string>
+    <string name="create_submit">Create</string>
+    <string name="create_save_draft">Save draft</string>
+
+    <!-- Route Result screen -->
+    <string name="result_rebuild">Rebuild</string>
+    <string name="result_share">Share route</string>
+    <string name="result_tab_map">Map</string>
+    <string name="result_tab_details">Details</string>
+    <string name="result_distance">Distance</string>
+    <string name="result_time">Time</string>
+    <string name="result_points">Points</string>
+    <string name="result_waypoints">Waypoints</string>
+    <string name="result_tips">Tips</string>
+    <string name="result_publishing">Saving…</string>
+    <string name="result_publish">Publish route</string>
+
+    <!-- Notifications screen -->
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_read_all">Mark all as read</string>
+    <string name="notifications_empty">No notifications yet</string>
+    <string name="notification_new_follower">%s followed you</string>
+    <string name="notification_route_like">%1$s liked route \"%2$s\"</string>
+    <string name="notification_new_comment">%1$s: %2$s</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_dark_theme">Dark theme</string>
+    <string name="settings_dark_on">On</string>
+    <string name="settings_dark_off">Off</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_lang_ru">Русский</string>
+    <string name="settings_lang_en">English</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version 1.0.0</string>
+
+    <!-- User Profile screen -->
+    <string name="user_routes">Routes</string>
+
+    <!-- Route Map Picker screen -->
+    <string name="map_picker_title">Route building</string>
+    <string name="map_picker_undo">Undo last point</string>
+    <string name="map_picker_hint_first">Tap the map to add the first point</string>
+    <string name="map_picker_hint_more">Add at least one more point</string>
+    <string name="map_picker_info">%1$d points · %2$.1f km</string>
+    <string name="map_picker_distance">Distance</string>
+    <string name="map_picker_points">Points</string>
+
+    <!-- Login screen -->
+    <string name="login_title">TrailSocial</string>
+    <string name="login_subtitle">Sign in to your account</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Password</string>
+    <string name="login_submit">Sign in</string>
+    <string name="login_register">No account? Sign up</string>
+    <string name="login_show_password">Show password</string>
+
+    <!-- Onboarding: Welcome -->
+    <string name="welcome_title">TrailSocial</string>
+    <string name="welcome_description">Discover hiking routes,\nshare your experiences,\nfind like-minded people.</string>
+    <string name="welcome_feature1">Route feed from fellow hikers</string>
+    <string name="welcome_feature2">Routes in your city and region</string>
+    <string name="welcome_feature3">Community of walking enthusiasts</string>
+    <string name="welcome_start">Get started — it\'s free</string>
+    <string name="welcome_login">Already have an account? Sign in</string>
+    <string name="welcome_terms">By pressing \"Get started\", you agree to the Terms of Service and Privacy Policy</string>
+
+    <!-- Onboarding: City -->
+    <string name="city_title">Where do you want to walk?</string>
+    <string name="city_subtitle">Choose one or more cities — we\'ll find routes nearby</string>
+    <string name="city_selected">Selected: %1$d %2$s</string>
+
+    <!-- Onboarding: Fitness -->
+    <string name="fitness_title">Fitness level</string>
+    <string name="fitness_subtitle">We\'ll suggest routes that match your abilities</string>
+
+    <!-- Onboarding: Interests -->
+    <string name="interests_title">What interests you?</string>
+    <string name="interests_subtitle">Select topics — we\'ll show matching routes</string>
+    <string name="interests_great">Great! %d interests selected. We\'ll find the best routes based on this.</string>
+    <string name="interests_selected">Selected: %d</string>
+
+    <!-- Onboarding: Profile Setup -->
+    <string name="setup_title">Create your profile</string>
+    <string name="setup_subtitle">To share routes and connect with the community</string>
+    <string name="setup_name">Your name</string>
+    <string name="setup_name_hint">What\'s your name?</string>
+    <string name="setup_username">Username</string>
+    <string name="setup_username_hint">username (latin)</string>
+    <string name="setup_email">Email</string>
+    <string name="setup_email_hint">your@email.com</string>
+    <string name="setup_password">Password</string>
+    <string name="setup_password_hint">At least 6 characters</string>
+    <string name="setup_show_password">Show password</string>
+    <string name="setup_registering">Creating profile…</string>
+    <string name="setup_register">Sign up</string>
+    <string name="setup_skip">Sign in later / use without account</string>
+    <string name="setup_preferences">Your preferences</string>
+    <string name="setup_cities_selected">%d city(ies) selected</string>
+    <string name="setup_interests_selected">%d interest(s) selected</string>
+</resources>

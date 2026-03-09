@@ -34,14 +34,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.trail2.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ai_route.GeneratedRoute
 import com.trail2.ai_route.RoutePoint
 import com.trail2.ui.theme.ForestGreen
-import com.trail2.ui.viewmodels.RouteCreateViewModel
+import com.trail2.ui.viewmodels.RouteResultViewModel
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.geometry.Polyline
@@ -55,14 +57,19 @@ fun RouteResultScreen(
     route: GeneratedRoute,
     onBack: () -> Unit,
     onRebuild: () -> Unit,
-    onSaved: (String) -> Unit = {}
+    onSaved: (String) -> Unit = {},
+    vm: RouteResultViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val uiState by vm.uiState.collectAsStateWithLifecycle()
     var showMap by remember { mutableStateOf(true) }
-    var isSaving by remember { mutableStateOf(false) }
-    var isSaved by remember { mutableStateOf(false) }
-    var saveError by remember { mutableStateOf<String?>(null) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val shareChooserTitle = stringResource(R.string.result_share)
+
+    LaunchedEffect(uiState.publishedRouteId) {
+        uiState.publishedRouteId?.let { routeId ->
+            onSaved(routeId)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -70,12 +77,12 @@ fun RouteResultScreen(
                 title = { Text(route.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, maxLines = 1) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, "Назад")
+                        Icon(Icons.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = onRebuild) {
-                        Icon(Icons.Outlined.Refresh, "Перестроить", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Outlined.Refresh, stringResource(R.string.result_rebuild), tint = MaterialTheme.colorScheme.primary)
                     }
                     IconButton(onClick = {
                         val shareText = buildString {
@@ -89,17 +96,20 @@ fun RouteResultScreen(
                             putExtra(Intent.EXTRA_TEXT, shareText)
                             type = "text/plain"
                         }
-                        context.startActivity(Intent.createChooser(sendIntent, "Поделиться маршрутом"))
+                        context.startActivity(Intent.createChooser(sendIntent, shareChooserTitle))
                     }) {
-                        Icon(Icons.Outlined.Share, "Поделиться")
+                        Icon(Icons.Outlined.Share, stringResource(R.string.share))
                     }
                     IconButton(
-                        onClick = { isSaved = !isSaved }
+                        onClick = { vm.toggleSave() },
+                        enabled = uiState.publishedRouteId != null
                     ) {
                         Icon(
-                            if (isSaved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
-                            "Сохранить",
-                            tint = if (isSaved) ForestGreen else MaterialTheme.colorScheme.onSurface
+                            if (uiState.isSaved) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
+                            stringResource(R.string.save),
+                            tint = if (uiState.isSaved) ForestGreen
+                                   else if (uiState.publishedRouteId != null) MaterialTheme.colorScheme.onSurface
+                                   else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                         )
                     }
                 },
@@ -115,10 +125,10 @@ fun RouteResultScreen(
                 containerColor = MaterialTheme.colorScheme.surface
             ) {
                 Tab(selected = showMap, onClick = { showMap = true }) {
-                    Padding { Text("🗺️  Карта", modifier = Modifier.padding(vertical = 12.dp)) }
+                    Padding { Text(stringResource(R.string.result_tab_map), modifier = Modifier.padding(vertical = 12.dp)) }
                 }
                 Tab(selected = !showMap, onClick = { showMap = false }) {
-                    Padding { Text("📋  Детали", modifier = Modifier.padding(vertical = 12.dp)) }
+                    Padding { Text(stringResource(R.string.result_tab_details), modifier = Modifier.padding(vertical = 12.dp)) }
                 }
             }
 
@@ -141,11 +151,9 @@ fun RouteResultScreen(
                 // ── Детали маршрута ───────────────────────
                 RouteDetailsPanel(
                     route = route,
-                    isSaving = isSaving,
-                    saveError = saveError,
-                    onPublish = {
-                        // TODO: call RouteRepository.createRoute from a VM
-                    }
+                    isSaving = uiState.isPublishing,
+                    saveError = uiState.publishError,
+                    onPublish = { vm.publishRoute(route) }
                 )
             }
         }
@@ -283,23 +291,27 @@ private fun RouteQuickStats(route: GeneratedRoute, modifier: Modifier = Modifier
             modifier = Modifier.padding(16.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            StatBox("📏", "${route.distanceKm} км", "Дистанция")
+            StatBox("📏", "${route.distanceKm} км", stringResource(R.string.result_distance))
             VerticalDivider(modifier = Modifier.height(40.dp))
-            StatBox("⏱️", "${route.durationMin} мин", "Время")
+            StatBox("⏱️", "${route.durationMin} мин", stringResource(R.string.result_time))
             VerticalDivider(modifier = Modifier.height(40.dp))
-            StatBox("📍", "${route.points.size}", "Точек")
+            StatBox("📍", "${route.points.size}", stringResource(R.string.result_points))
             VerticalDivider(modifier = Modifier.height(40.dp))
-            val diffLabel = when (route.difficulty) {
-                "EASY" -> "Лёгкий"
-                "MODERATE" -> "Средний"
-                else -> "Сложный"
+            val diffLabel = when (route.difficulty.uppercase()) {
+                "EASY" -> stringResource(R.string.difficulty_easy)
+                "MODERATE" -> stringResource(R.string.difficulty_medium)
+                "HARD" -> stringResource(R.string.difficulty_hard)
+                "EXPERT" -> stringResource(R.string.difficulty_expert)
+                else -> route.difficulty
             }
-            val diffColor = when (route.difficulty) {
+            val diffColor = when (route.difficulty.uppercase()) {
                 "EASY" -> Color(0xFF52B788)
                 "MODERATE" -> Color(0xFFE9C46A)
+                "HARD" -> Color(0xFFE63946)
+                "EXPERT" -> Color(0xFF9B2226)
                 else -> Color(0xFFE63946)
             }
-            StatBox("💪", diffLabel, "Уровень", diffColor)
+            StatBox("💪", diffLabel, stringResource(R.string.create_difficulty), diffColor)
         }
     }
 }
@@ -347,7 +359,7 @@ private fun RouteDetailsPanel(
         HorizontalDivider()
 
         // Точки маршрута
-        Text("Точки маршрута", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.result_waypoints), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         route.points.forEachIndexed { idx, point ->
             RoutePointCard(point = point, number = idx + 1)
         }
@@ -356,7 +368,7 @@ private fun RouteDetailsPanel(
 
         // Советы
         if (route.tips.isNotEmpty()) {
-            Text("Советы", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.result_tips), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             route.tips.forEach { tip ->
                 Row(verticalAlignment = Alignment.Top, modifier = Modifier.fillMaxWidth()) {
                     Text("💡", fontSize = 16.sp, modifier = Modifier.width(28.dp))
@@ -401,7 +413,7 @@ private fun RouteDetailsPanel(
                 Spacer(Modifier.width(8.dp))
             }
             Text(
-                if (isSaving) "Сохранение..." else "Опубликовать маршрут",
+                if (isSaving) stringResource(R.string.result_publishing) else stringResource(R.string.result_publish),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold
             )

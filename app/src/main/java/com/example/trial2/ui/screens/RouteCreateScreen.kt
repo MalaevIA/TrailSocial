@@ -16,8 +16,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.trail2.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ui.components.RouteMapView
 import com.trail2.ui.theme.ForestGreen
@@ -41,10 +43,10 @@ fun RouteCreateScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Новый маршрут") },
+                title = { Text(stringResource(R.string.create_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -61,7 +63,7 @@ fun RouteCreateScreen(
             OutlinedTextField(
                 value = form.title,
                 onValueChange = vm::onTitleChange,
-                label = { Text("Название *") },
+                label = { Text(stringResource(R.string.create_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -69,7 +71,7 @@ fun RouteCreateScreen(
             OutlinedTextField(
                 value = form.description,
                 onValueChange = vm::onDescriptionChange,
-                label = { Text("Описание") },
+                label = { Text(stringResource(R.string.create_description)) },
                 minLines = 3,
                 maxLines = 5,
                 modifier = Modifier.fillMaxWidth()
@@ -78,13 +80,13 @@ fun RouteCreateScreen(
             OutlinedTextField(
                 value = form.region,
                 onValueChange = vm::onRegionChange,
-                label = { Text("Регион") },
+                label = { Text(stringResource(R.string.create_region)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
             // ── Map route section ──
-            Text("Маршрут на карте *", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.create_map_route), style = MaterialTheme.typography.labelLarge)
             if (form.hasCoordinates) {
                 RouteMapView(
                     geometry = form.geometry,
@@ -108,7 +110,7 @@ fun RouteCreateScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     TextButton(onClick = onPickRoute) {
-                        Text("Изменить")
+                        Text(stringResource(R.string.edit))
                     }
                 }
             } else {
@@ -117,7 +119,7 @@ fun RouteCreateScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Нарисовать маршрут на карте")
+                    Text(stringResource(R.string.create_draw_route))
                 }
             }
 
@@ -125,19 +127,19 @@ fun RouteCreateScreen(
             OutlinedTextField(
                 value = form.durationMinutes,
                 onValueChange = vm::onDurationChange,
-                label = { Text("Время (мин)") },
+                label = { Text(stringResource(R.string.create_time)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
             // ── Difficulty ──
-            Text("Сложность", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.create_difficulty), style = MaterialTheme.typography.labelLarge)
             val difficulties = listOf(
-                "easy" to "Лёгкий",
-                "moderate" to "Средний",
-                "hard" to "Сложный",
-                "expert" to "Эксперт"
+                "easy" to stringResource(R.string.difficulty_easy),
+                "moderate" to stringResource(R.string.difficulty_medium),
+                "hard" to stringResource(R.string.difficulty_hard),
+                "expert" to stringResource(R.string.difficulty_expert_short)
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 difficulties.forEach { (value, label) ->
@@ -150,14 +152,14 @@ fun RouteCreateScreen(
             }
 
             // ── Tags ──
-            Text("Теги", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.create_tags), style = MaterialTheme.typography.labelLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 form.tags.forEach { tag ->
                     InputChip(
                         selected = false,
                         onClick = { vm.removeTag(tag) },
                         label = { Text(tag) },
-                        trailingIcon = { Icon(Icons.Default.Close, "Удалить", Modifier.size(16.dp)) }
+                        trailingIcon = { Icon(Icons.Default.Close, stringResource(R.string.delete), Modifier.size(16.dp)) }
                     )
                 }
             }
@@ -165,12 +167,12 @@ fun RouteCreateScreen(
                 OutlinedTextField(
                     value = form.tagInput,
                     onValueChange = vm::onTagInputChange,
-                    label = { Text("Новый тег") },
+                    label = { Text(stringResource(R.string.create_new_tag)) },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(onClick = vm::addTag) {
-                    Icon(Icons.Default.Add, "Добавить")
+                    Icon(Icons.Default.Add, stringResource(R.string.add))
                 }
             }
 
@@ -197,7 +199,7 @@ fun RouteCreateScreen(
                 if (uiState.isSubmitting) {
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Создать", fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.create_submit), fontWeight = FontWeight.SemiBold)
                 }
             }
 
@@ -207,7 +209,7 @@ fun RouteCreateScreen(
                 enabled = canSubmit,
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Сохранить черновик")
+                Text(stringResource(R.string.create_save_draft))
             }
 
             Spacer(Modifier.height(16.dp))

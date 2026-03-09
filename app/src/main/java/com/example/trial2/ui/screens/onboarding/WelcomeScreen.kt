@@ -9,14 +9,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.trail2.R
 import com.trail2.ui.components.onboarding.OnboardingButton
 
 // ─────────────────────────────────────────────
@@ -57,7 +55,7 @@ fun WelcomeScreen(
                 Text("🏔️", fontSize = 52.sp)
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "TrailSocial",
+                    text = stringResource(R.string.welcome_title),
                     fontSize = 38.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
@@ -65,7 +63,7 @@ fun WelcomeScreen(
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "Открывайте пешие маршруты,\nделитесь впечатлениями,\nнаходите единомышленников.",
+                    text = stringResource(R.string.welcome_description),
                     fontSize = 17.sp,
                     color = Color.White.copy(alpha = 0.88f),
                     lineHeight = 24.sp
@@ -84,16 +82,16 @@ fun WelcomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Фичи
-                    FeatureRow(emoji = "🗺️", text = "Лента маршрутов от таких же туристов")
+                    FeatureRow(emoji = "🗺️", text = stringResource(R.string.welcome_feature1))
                     Spacer(Modifier.height(12.dp))
-                    FeatureRow(emoji = "📍", text = "Маршруты по вашему городу и региону")
+                    FeatureRow(emoji = "📍", text = stringResource(R.string.welcome_feature2))
                     Spacer(Modifier.height(12.dp))
-                    FeatureRow(emoji = "👥", text = "Сообщество любителей пеших прогулок")
+                    FeatureRow(emoji = "👥", text = stringResource(R.string.welcome_feature3))
 
                     Spacer(Modifier.height(28.dp))
 
                     OnboardingButton(
-                        text = "Начать — это бесплатно",
+                        text = stringResource(R.string.welcome_start),
                         onClick = onContinue
                     )
 
@@ -101,7 +99,7 @@ fun WelcomeScreen(
 
                     TextButton(onClick = onGoToLogin) {
                         Text(
-                            "Уже есть аккаунт? Войти",
+                            stringResource(R.string.welcome_login),
                             fontSize = 14.sp,
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium
@@ -112,16 +110,7 @@ fun WelcomeScreen(
 
                     // Политика конфиденциальности
                     Text(
-                        text = buildAnnotatedString {
-                            append("Нажимая «Начать», вы соглашаетесь с ")
-                            withStyle(SpanStyle(textDecoration = TextDecoration.Underline, fontWeight = FontWeight.Medium)) {
-                                append("Условиями использования")
-                            }
-                            append(" и ")
-                            withStyle(SpanStyle(textDecoration = TextDecoration.Underline, fontWeight = FontWeight.Medium)) {
-                                append("Политикой конфиденциальности")
-                            }
-                        },
+                        text = stringResource(R.string.welcome_terms),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,

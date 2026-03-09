@@ -19,8 +19,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.trail2.R
 import com.trail2.ai_route.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -32,7 +34,7 @@ fun RouteBuilderScreen(
     val state by vm.state.collectAsStateWithLifecycle()
 
     when (val screen = state.screenState) {
-        is RouteBuilderScreenState.Loading -> LoadingScreen()
+        is RouteBuilderScreenState.Loading -> LoadingScreen(pollCount = screen.pollCount)
         is RouteBuilderScreenState.Error   -> ErrorScreen(screen.message) { vm.resetToForm() }
         is RouteBuilderScreenState.Result  -> {
             LaunchedEffect(screen.route) { onRouteReady(screen.route) }
@@ -48,12 +50,12 @@ fun RouteBuilderScreen(
                         .padding(horizontal = 16.dp, vertical = 14.dp)
                 ) {
                     Text(
-                        "AI-маршрут",
+                        stringResource(R.string.builder_title),
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
                     Text(
-                        "Шаг ${state.currentStep.stepNum} из ${vm.totalSteps} — ${state.currentStep.title}",
+                        stringResource(R.string.builder_step_format, state.currentStep.stepNum, vm.totalSteps, state.currentStep.title),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -96,7 +98,7 @@ fun RouteBuilderScreen(
 @Composable
 private fun GoalStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
     StepScroll {
-        StepHeader("🎯", "Какова цель прогулки?", "Выберите один вариант")
+        StepHeader("🎯", stringResource(R.string.builder_goal_title), stringResource(R.string.builder_goal_subtitle))
         EnumRadioGroup(
             items = TripPurpose.entries,
             selected = form.purpose,
@@ -105,7 +107,7 @@ private fun GoalStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
             onSelect = { vm.setPurpose(it) }
         )
         Spacer(Modifier.height(24.dp))
-        StepHeader("👥", "С кем идёте?", "")
+        StepHeader("👥", stringResource(R.string.builder_company_title), "")
         EnumRadioGroup(
             items = GroupType.entries,
             selected = form.groupType,
@@ -121,7 +123,7 @@ private fun GoalStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
 @Composable
 private fun ParamsStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
     StepScroll {
-        StepHeader("⏱️", "Сколько времени есть?", "")
+        StepHeader("⏱️", stringResource(R.string.builder_time_title), "")
         EnumRadioGroup(
             items = TripDuration.entries,
             selected = form.duration,
@@ -130,7 +132,7 @@ private fun ParamsStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
             onSelect = { vm.setDuration(it) }
         )
         Spacer(Modifier.height(24.dp))
-        StepHeader("📏", "Желаемая дистанция", "Сколько готовы пройти")
+        StepHeader("📏", stringResource(R.string.builder_distance_title), stringResource(R.string.builder_distance_subtitle))
         EnumRadioGroup(
             items = TripDistance.entries,
             selected = form.distance,
@@ -139,7 +141,7 @@ private fun ParamsStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
             onSelect = { vm.setDistance(it) }
         )
         Spacer(Modifier.height(24.dp))
-        StepHeader("🏃", "Темп ходьбы", "")
+        StepHeader("🏃", stringResource(R.string.builder_pace_title), "")
         EnumRadioGroup(
             items = Pace.entries,
             selected = form.pace,
@@ -156,7 +158,7 @@ private fun ParamsStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
 @Composable
 private fun TerrainStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
     StepScroll {
-        StepHeader("🗺️", "Какая местность нравится?", "Можно выбрать несколько")
+        StepHeader("🗺️", stringResource(R.string.builder_terrain_title), stringResource(R.string.builder_terrain_subtitle))
         Spacer(Modifier.height(8.dp))
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -191,7 +193,7 @@ private fun TerrainStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
                 color = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Text(
-                    "Выбрано: ${form.terrains.joinToString { it.label }}",
+                    stringResource(R.string.builder_terrain_selected, form.terrains.joinToString { it.label }),
                     modifier = Modifier.padding(12.dp),
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -206,12 +208,12 @@ private fun TerrainStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
 @Composable
 private fun DetailsStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
     StepScroll {
-        StepHeader("📍", "Детали маршрута", "Уточните пожелания")
+        StepHeader("📍", stringResource(R.string.builder_details_title), stringResource(R.string.builder_details_subtitle))
         FormTextField(
             value = form.startPoint,
             onValueChange = { vm.setStartPoint(it) },
-            label = "Точка старта *",
-            placeholder = "Название района, станции метро, адрес...",
+            label = stringResource(R.string.builder_start_point),
+            placeholder = stringResource(R.string.builder_start_hint),
             icon = Icons.Outlined.LocationOn,
             required = true
         )
@@ -219,8 +221,8 @@ private fun DetailsStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
         FormTextField(
             value = form.mustSeeWishes,
             onValueChange = { vm.setMustSee(it) },
-            label = "Хочу увидеть / посетить",
-            placeholder = "Парк, пруд, старинная церковь, граффити...",
+            label = stringResource(R.string.builder_want_to_see),
+            placeholder = stringResource(R.string.builder_want_to_see_hint),
             icon = Icons.Outlined.Favorite,
             singleLine = false
         )
@@ -228,8 +230,8 @@ private fun DetailsStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
         FormTextField(
             value = form.avoidWishes,
             onValueChange = { vm.setAvoid(it) },
-            label = "Чего избегать",
-            placeholder = "Шумные дороги, крутые подъёмы, стройки...",
+            label = stringResource(R.string.builder_avoid),
+            placeholder = stringResource(R.string.builder_avoid_hint),
             icon = Icons.Outlined.Block,
             singleLine = false
         )
@@ -241,11 +243,11 @@ private fun DetailsStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
 @Composable
 private fun ExtrasStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
     StepScroll {
-        StepHeader("✨", "Дополнительно", "Необязательно, но поможет уточнить маршрут")
-        ToggleOption("🐕", "Маршрут подходит для собак", form.hasPets) { vm.togglePets() }
-        ToggleOption("☕", "Желательно кафе / кофейня рядом", form.needsCafe) { vm.toggleCafe() }
-        ToggleOption("🚻", "Наличие туалетов", form.needsWC) { vm.toggleWC() }
-        ToggleOption("♿", "Без ступеней и барьеров", form.accessible) { vm.toggleAccessible() }
+        StepHeader("✨", stringResource(R.string.builder_extra_title), stringResource(R.string.builder_extra_subtitle))
+        ToggleOption("🐕", stringResource(R.string.builder_dog_friendly), form.hasPets) { vm.togglePets() }
+        ToggleOption("☕", stringResource(R.string.builder_cafe_nearby), form.needsCafe) { vm.toggleCafe() }
+        ToggleOption("🚻", stringResource(R.string.builder_toilets), form.needsWC) { vm.toggleWC() }
+        ToggleOption("♿", stringResource(R.string.builder_accessible), form.accessible) { vm.toggleAccessible() }
         Spacer(Modifier.height(16.dp))
         Surface(
             shape = RoundedCornerShape(12.dp),
@@ -260,7 +262,7 @@ private fun ExtrasStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
                 Text("🤖", fontSize = 24.sp)
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    "После нажатия «Сгенерировать» AI составит маршрут специально для вас на основе ваших ответов",
+                    stringResource(R.string.builder_ai_hint),
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 18.sp
@@ -439,7 +441,7 @@ private fun FormBottomBar(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("← Назад")
+                        Text("← " + stringResource(R.string.builder_back))
                     }
                 }
                 Button(
@@ -448,8 +450,8 @@ private fun FormBottomBar(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        if (step.stepNum == totalSteps) "🤖  Сгенерировать маршрут"
-                        else "Далее →",
+                        if (step.stepNum == totalSteps) stringResource(R.string.builder_generate)
+                        else stringResource(R.string.builder_next) + " →",
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -461,19 +463,44 @@ private fun FormBottomBar(
 // ── Экран загрузки ────────────────────────────────────────────
 
 @Composable
-private fun LoadingScreen() {
+private fun LoadingScreen(pollCount: Int = 0) {
+    // Ожидаем ~15 запросов (30 сек / 2 сек интервал), максимум 95% до завершения
+    val expectedPolls = 15
+    val progress = if (pollCount == 0) 0f
+                   else (pollCount.toFloat() / expectedPolls).coerceAtMost(0.95f)
+    val percent = (progress * 100).toInt()
+
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 32.dp)
+        ) {
             CircularProgressIndicator(modifier = Modifier.size(60.dp))
             Spacer(Modifier.height(20.dp))
             Text("🤖", fontSize = 36.sp)
             Spacer(Modifier.height(8.dp))
-            Text("AI строит ваш маршрут...", fontSize = 18.sp, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.builder_generating), fontSize = 18.sp, fontWeight = FontWeight.Medium)
             Spacer(Modifier.height(6.dp))
             Text(
-                "Это может занять несколько секунд",
+                stringResource(R.string.builder_generating_wait),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(24.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp),
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "$percent%",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }
@@ -490,7 +517,7 @@ private fun ErrorScreen(message: String, onRetry: () -> Unit) {
         ) {
             Text("😕", fontSize = 48.sp)
             Spacer(Modifier.height(12.dp))
-            Text("Не удалось составить маршрут", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.builder_error), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Text(
                 message,
@@ -499,7 +526,7 @@ private fun ErrorScreen(message: String, onRetry: () -> Unit) {
             )
             Spacer(Modifier.height(24.dp))
             Button(onClick = onRetry, shape = RoundedCornerShape(12.dp)) {
-                Text("Попробовать снова")
+                Text(stringResource(R.string.builder_try_again))
             }
         }
     }

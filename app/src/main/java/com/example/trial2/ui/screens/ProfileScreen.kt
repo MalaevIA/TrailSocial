@@ -15,8 +15,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.trail2.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.FollowListType
 import com.trail2.onboarding.FitnessLevel
@@ -38,7 +40,8 @@ fun ProfileScreen(
     val onboardingAnswers by onboardingVm.savedAnswers.collectAsStateWithLifecycle()
 
     val user = profileState.user
-    val displayName = user?.name ?: onboardingAnswers.displayName.ifBlank { "Путешественник" }
+    val fallbackName = stringResource(R.string.profile_default_title)
+    val displayName = user?.name ?: onboardingAnswers.displayName.ifBlank { fallbackName }
 
     val selectedCities = remember(onboardingAnswers.selectedCityIds) {
         OnboardingData.cities.filter { it.id in onboardingAnswers.selectedCityIds }
@@ -58,7 +61,7 @@ fun ProfileScreen(
                 onClick = onSettingsClick,
                 modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
             ) {
-                Icon(Icons.Outlined.Settings, contentDescription = "Настройки", tint = Color.White)
+                Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.profile_settings), tint = Color.White)
             }
         }
 
@@ -89,7 +92,7 @@ fun ProfileScreen(
             }
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                ProfileStatItem("Маршруты", "${user?.routesCount ?: 0}")
+                ProfileStatItem(stringResource(R.string.profile_routes), "${user?.routesCount ?: 0}")
                 VerticalDivider(Modifier.height(36.dp))
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -98,7 +101,7 @@ fun ProfileScreen(
                     }
                 ) {
                     Text("${user?.followersCount ?: 0}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                    Text("Подписчики", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.profile_followers), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 VerticalDivider(Modifier.height(36.dp))
                 Column(
@@ -108,14 +111,14 @@ fun ProfileScreen(
                     }
                 ) {
                     Text("${user?.followingCount ?: 0}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                    Text("Подписки", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.profile_following), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             Spacer(Modifier.height(20.dp))
 
             if (selectedCities.isNotEmpty()) {
-                SectionTitle("Мои города")
+                SectionTitle(stringResource(R.string.profile_my_cities))
                 Spacer(Modifier.height(8.dp))
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -138,7 +141,7 @@ fun ProfileScreen(
             }
 
             if (selectedInterests.isNotEmpty()) {
-                SectionTitle("Интересы")
+                SectionTitle(stringResource(R.string.profile_interests))
                 Spacer(Modifier.height(8.dp))
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -159,7 +162,7 @@ fun ProfileScreen(
             }
 
             if (user?.bio?.isNotBlank() == true) {
-                SectionTitle("О себе")
+                SectionTitle(stringResource(R.string.profile_about))
                 Spacer(Modifier.height(4.dp))
                 Text(user.bio, fontSize = 14.sp)
                 Spacer(Modifier.height(20.dp))
@@ -176,25 +179,25 @@ fun ProfileScreen(
             ) {
                 Icon(Icons.Outlined.Logout, null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Выйти из аккаунта")
+                Text(stringResource(R.string.profile_logout))
             }
 
             if (showLogoutDialog) {
                 AlertDialog(
                     onDismissRequest = { showLogoutDialog = false },
-                    title = { Text("Выйти из аккаунта?") },
-                    text = { Text("Вы будете перенаправлены на экран входа.") },
+                    title = { Text(stringResource(R.string.profile_logout_confirm)) },
+                    text = { Text(stringResource(R.string.profile_logout_message)) },
                     confirmButton = {
                         TextButton(onClick = {
                             profileVm.logout()
                             onboardingVm.logout()
                             showLogoutDialog = false
                         }) {
-                            Text("Выйти", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.profile_logout_action), color = MaterialTheme.colorScheme.error)
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = { showLogoutDialog = false }) { Text("Отмена") }
+                        TextButton(onClick = { showLogoutDialog = false }) { Text(stringResource(R.string.cancel)) }
                     }
                 )
             }

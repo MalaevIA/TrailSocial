@@ -14,8 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.trail2.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.data.Notification
 import com.trail2.data.NotificationType
@@ -36,16 +38,16 @@ fun NotificationsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Уведомления") },
+                title = { Text(stringResource(R.string.notifications_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
                     if (uiState.unreadCount > 0) {
                         IconButton(onClick = vm::markAllRead) {
-                            Icon(Icons.Default.DoneAll, "Прочитать все")
+                            Icon(Icons.Default.DoneAll, stringResource(R.string.notifications_read_all))
                         }
                     }
                 }
@@ -58,7 +60,7 @@ fun NotificationsScreen(
             }
         } else if (uiState.notifications.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Пока нет уведомлений", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.notifications_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(
@@ -119,9 +121,9 @@ private fun NotificationItem(
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 val text = when (notification.type) {
-                    NotificationType.NEW_FOLLOWER -> "${notification.actor.name} подписался на вас"
-                    NotificationType.ROUTE_LIKE -> "${notification.actor.name} оценил маршрут \"${notification.routeTitle ?: ""}\""
-                    NotificationType.NEW_COMMENT -> "${notification.actor.name}: ${notification.commentText ?: ""}"
+                    NotificationType.NEW_FOLLOWER -> stringResource(R.string.notification_new_follower, notification.actor.name)
+                    NotificationType.ROUTE_LIKE -> stringResource(R.string.notification_route_like, notification.actor.name, notification.routeTitle ?: "")
+                    NotificationType.NEW_COMMENT -> stringResource(R.string.notification_new_comment, notification.actor.name, notification.commentText ?: "")
                 }
                 Text(
                     text = text,

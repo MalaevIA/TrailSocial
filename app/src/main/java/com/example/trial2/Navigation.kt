@@ -8,9 +8,11 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ai_route.GeneratedRoute
+import com.trail2.ai_route.RouteBuilderViewModel
 import com.trail2.onboarding.OnboardingViewModel
 import com.trail2.ui.screens.*
 import com.trail2.ui.screens.auth.LoginScreen
@@ -37,16 +39,16 @@ enum class FollowListType { FOLLOWERS, FOLLOWING }
 
 data class BottomTab(
     val screen: Screen,
-    val label: String,
+    val labelResId: Int,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 )
 
 val bottomTabs = listOf(
-    BottomTab(Screen.Feed, "Лента", Icons.Filled.Home, Icons.Outlined.Home),
-    BottomTab(Screen.Explore, "Поиск", Icons.Filled.Search, Icons.Outlined.Search),
-    BottomTab(Screen.AIRoute, "AI-маршрут", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome),
-    BottomTab(Screen.Profile, "Профиль", Icons.Filled.Person, Icons.Outlined.Person)
+    BottomTab(Screen.Feed, R.string.tab_feed, Icons.Filled.Home, Icons.Outlined.Home),
+    BottomTab(Screen.Explore, R.string.tab_explore, Icons.Filled.Search, Icons.Outlined.Search),
+    BottomTab(Screen.AIRoute, R.string.tab_ai_route, Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome),
+    BottomTab(Screen.Profile, R.string.tab_profile, Icons.Filled.Person, Icons.Outlined.Person)
 )
 
 @Composable
@@ -96,6 +98,7 @@ fun MainAppContent() {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Feed) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var routeMapResult by remember { mutableStateOf<RouteMapData?>(null) }
+    val builderVm: RouteBuilderViewModel = hiltViewModel()
 
     val navigateBack: () -> Unit = { currentScreen = bottomTabs[selectedTabIndex].screen }
 
@@ -111,8 +114,19 @@ fun MainAppContent() {
         is Screen.AIRouteResult -> {
             RouteResultScreen(
                 route = screen.route,
-                onBack = { currentScreen = Screen.AIRoute },
-                onRebuild = { currentScreen = Screen.AIRoute }
+                onBack = {
+                    builderVm.resetFully()
+                    currentScreen = Screen.AIRoute
+                },
+                onRebuild = {
+                    builderVm.resetFully()
+                    currentScreen = Screen.AIRoute
+                },
+                onSaved = { routeId ->
+                    builderVm.resetFully()
+                    selectedTabIndex = 0
+                    currentScreen = Screen.RouteDetail(routeId)
+                }
             )
             return
         }
@@ -203,10 +217,10 @@ fun MainAppContent() {
                         icon = {
                             Icon(
                                 if (selectedTabIndex == index) tab.selectedIcon else tab.unselectedIcon,
-                                contentDescription = tab.label
+                                contentDescription = stringResource(tab.labelResId)
                             )
                         },
-                        label = { Text(tab.label) }
+                        label = { Text(stringResource(tab.labelResId)) }
                     )
                 }
             }
@@ -233,7 +247,8 @@ fun MainAppContent() {
                     onUserClick = { userId -> currentScreen = Screen.UserProfile(userId) }
                 )
                 Screen.AIRoute -> RouteBuilderScreen(
-                    onRouteReady = { route -> currentScreen = Screen.AIRouteResult(route) }
+                    onRouteReady = { route -> currentScreen = Screen.AIRouteResult(route) },
+                    vm = builderVm
                 )
                 Screen.Profile -> ProfileScreen(
                     onRouteClick = { id -> currentScreen = Screen.RouteDetail(id) },

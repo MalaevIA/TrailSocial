@@ -15,6 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.res.stringResource
+import com.trail2.R
 import com.trail2.ui.theme.ForestGreen
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
@@ -77,9 +79,9 @@ fun RouteMapPickerScreen(
     val canFinish = pointCount >= 2
 
     val bannerText = when {
-        pointCount == 0 -> "Нажмите на карту для добавления первой точки"
-        pointCount == 1 -> "Добавьте ещё хотя бы одну точку"
-        else -> "$pointCount точек · ${"%.1f".format(distanceKm)} км"
+        pointCount == 0 -> stringResource(R.string.map_picker_hint_first)
+        pointCount == 1 -> stringResource(R.string.map_picker_hint_more)
+        else -> stringResource(R.string.map_picker_info, pointCount, distanceKm)
     }
 
     val bannerColor = when {
@@ -90,10 +92,10 @@ fun RouteMapPickerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Построение маршрута", fontSize = 16.sp) },
+                title = { Text(stringResource(R.string.map_picker_title), fontSize = 16.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
                 actions = {
@@ -109,7 +111,7 @@ fun RouteMapPickerScreen(
                         },
                         enabled = points.isNotEmpty()
                     ) {
-                        Icon(Icons.Filled.Undo, "Отменить последнюю точку")
+                        Icon(Icons.Filled.Undo, stringResource(R.string.map_picker_undo))
                     }
                 }
             )
@@ -124,11 +126,11 @@ fun RouteMapPickerScreen(
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Дистанция", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.map_picker_distance), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text("${"%.2f".format(distanceKm)} км", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                             }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Точек", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(R.string.map_picker_points), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text("$pointCount", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                             }
                         }
@@ -144,7 +146,7 @@ fun RouteMapPickerScreen(
                             shape = RoundedCornerShape(12.dp),
                             enabled = points.isNotEmpty()
                         ) {
-                            Text("Очистить")
+                            Text(stringResource(R.string.clear))
                         }
                         Button(
                             onClick = {
@@ -162,7 +164,7 @@ fun RouteMapPickerScreen(
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
                         ) {
-                            Text("Готово")
+                            Text(stringResource(R.string.done))
                         }
                     }
                 }

@@ -17,10 +17,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ui.components.DifficultyBadge
+import com.trail2.R
 import com.trail2.ui.theme.ForestGreen
 import com.trail2.ui.viewmodels.ExploreViewModel
 
@@ -36,13 +38,13 @@ fun ExploreScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 4.dp) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Text("Поиск маршрутов", fontWeight = FontWeight.Bold, fontSize = 22.sp, color = ForestGreen)
+                Text(stringResource(R.string.explore_search), fontWeight = FontWeight.Bold, fontSize = 22.sp, color = ForestGreen)
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = uiState.query,
                     onValueChange = vm::onQueryChange,
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Урал, Кавказ, Алтай...") },
+                    placeholder = { Text(stringResource(R.string.explore_search_placeholder)) },
                     leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = ForestGreen) },
                     shape = RoundedCornerShape(24.dp),
                     singleLine = true
@@ -55,18 +57,26 @@ fun ExploreScreen(
                 CircularProgressIndicator()
             }
         } else {
+            val defaultRegions = listOf(
+                stringResource(R.string.region_ural),
+                stringResource(R.string.region_caucasus),
+                stringResource(R.string.region_altai),
+                stringResource(R.string.region_kamchatka),
+                stringResource(R.string.region_karelia),
+                stringResource(R.string.region_siberia)
+            )
+            val regionColors = listOf("2D6A4F", "E76F51", "457B9D", "E63946", "264653", "6D6875")
+            val regions = if (uiState.regions.isNotEmpty()) uiState.regions else defaultRegions
+
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (uiState.query.isBlank()) {
                     item {
-                        Text("Популярные регионы", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        Text(stringResource(R.string.explore_popular_regions), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                         Spacer(Modifier.height(8.dp))
                     }
-
-                    val regionColors = listOf("2D6A4F", "E76F51", "457B9D", "E63946", "264653", "6D6875")
-                    val regions = if (uiState.regions.isNotEmpty()) uiState.regions else defaultRegions
 
                     item {
                         LazyVerticalGrid(
@@ -88,7 +98,7 @@ fun ExploreScreen(
 
                 if (uiState.users.isNotEmpty()) {
                     item {
-                        Text("Пользователи", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        Text(stringResource(R.string.explore_users), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                     }
                     items(uiState.users.size) { i ->
                         val user = uiState.users[i]
@@ -107,7 +117,7 @@ fun ExploreScreen(
                 item {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        if (uiState.query.isBlank()) "Все маршруты" else "Результаты",
+                        if (uiState.query.isBlank()) stringResource(R.string.explore_all_routes) else stringResource(R.string.explore_results),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp
                     )
@@ -124,8 +134,6 @@ fun ExploreScreen(
         }
     }
 }
-
-private val defaultRegions = listOf("Урал", "Кавказ", "Алтай", "Камчатка", "Карелия", "Сибирь")
 
 @Composable
 fun RegionCard(region: String, colorHex: String, onClick: () -> Unit) {

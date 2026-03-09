@@ -14,6 +14,19 @@ data class AiGenerateRequestDto(
 )
 
 @Serializable
+data class AiTaskCreatedDto(
+    @SerialName("task_id") val taskId: String
+)
+
+@Serializable
+data class AiTaskStatusDto(
+    @SerialName("task_id") val taskId: String,
+    val status: String,
+    val result: GeneratedRouteDto? = null,
+    val error: String? = null
+)
+
+@Serializable
 data class GeneratedRouteDto(
     val title: String,
     val description: String,

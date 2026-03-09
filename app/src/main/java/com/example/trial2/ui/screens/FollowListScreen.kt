@@ -13,8 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.trail2.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.FollowListType
 import com.trail2.data.User
@@ -47,11 +49,11 @@ fun FollowListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (type == FollowListType.FOLLOWERS) "Подписчики" else "Подписки")
+                    Text(if (type == FollowListType.FOLLOWERS) stringResource(R.string.profile_followers) else stringResource(R.string.profile_following))
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -59,7 +61,7 @@ fun FollowListScreen(
     ) { padding ->
         if (users.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Пусто", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(

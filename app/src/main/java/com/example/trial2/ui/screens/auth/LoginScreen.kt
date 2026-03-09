@@ -17,9 +17,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.trail2.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ui.viewmodels.AuthViewModel
@@ -45,14 +47,14 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "TrailSocial",
+            text = stringResource(R.string.login_title),
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "Войдите в аккаунт",
+            text = stringResource(R.string.login_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -61,7 +63,7 @@ fun LoginScreen(
         OutlinedTextField(
             value = uiState.emailInput,
             onValueChange = vm::onEmailChange,
-            label = { Text("Email") },
+            label = { Text(stringResource(R.string.login_email)) },
             leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Email,
@@ -75,7 +77,7 @@ fun LoginScreen(
         OutlinedTextField(
             value = uiState.passwordInput,
             onValueChange = vm::onPasswordChange,
-            label = { Text("Пароль") },
+            label = { Text(stringResource(R.string.login_password)) },
             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
             trailingIcon = {
                 IconButton(onClick = vm::togglePasswordVisible) {
@@ -123,14 +125,14 @@ fun LoginScreen(
                     strokeWidth = 2.dp
                 )
             } else {
-                Text("Войти", fontSize = 16.sp)
+                Text(stringResource(R.string.login_submit), fontSize = 16.sp)
             }
         }
 
         Spacer(Modifier.height(16.dp))
 
         TextButton(onClick = onGoToRegister) {
-            Text("Нет аккаунта? Зарегистрироваться")
+            Text(stringResource(R.string.login_register))
         }
     }
 }

@@ -14,8 +14,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.trail2.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ui.theme.ForestGreen
 import com.trail2.ui.viewmodels.SettingsViewModel
@@ -32,10 +34,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Настройки") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 }
             )
@@ -48,7 +50,7 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             // ── Appearance section ──
-            SettingsSectionHeader("Оформление")
+            SettingsSectionHeader(stringResource(R.string.settings_appearance))
 
             // Dark theme toggle
             Surface(
@@ -69,9 +71,9 @@ fun SettingsScreen(
                     )
                     Spacer(Modifier.width(16.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Тёмная тема", fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.settings_dark_theme), fontSize = 15.sp, fontWeight = FontWeight.Medium)
                         Text(
-                            if (isDarkTheme) "Включена" else "Выключена",
+                            if (isDarkTheme) stringResource(R.string.settings_dark_on) else stringResource(R.string.settings_dark_off),
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -87,11 +89,11 @@ fun SettingsScreen(
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
             // ── Language section ──
-            SettingsSectionHeader("Язык")
+            SettingsSectionHeader(stringResource(R.string.settings_language))
 
             val languages = listOf(
-                "ru" to "Русский",
-                "en" to "English"
+                "ru" to stringResource(R.string.settings_lang_ru),
+                "en" to stringResource(R.string.settings_lang_en)
             )
 
             languages.forEach { (code, label) ->
@@ -133,7 +135,7 @@ fun SettingsScreen(
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
             // ── About section ──
-            SettingsSectionHeader("О приложении")
+            SettingsSectionHeader(stringResource(R.string.settings_about))
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -154,7 +156,7 @@ fun SettingsScreen(
                     Spacer(Modifier.width(16.dp))
                     Column {
                         Text("TrailSocial", fontSize = 15.sp, fontWeight = FontWeight.Medium)
-                        Text("Версия 1.0.0", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.settings_version), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

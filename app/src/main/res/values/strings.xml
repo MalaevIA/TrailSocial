@@ -1,3 +1,239 @@
 <resources>
-    <string name="app_name">trial2</string>
+    <string name="app_name">TrailSocial</string>
+
+    <!-- Bottom navigation tabs -->
+    <string name="tab_feed">Лента</string>
+    <string name="tab_explore">Поиск</string>
+    <string name="tab_ai_route">AI-маршрут</string>
+    <string name="tab_profile">Профиль</string>
+
+    <!-- Common -->
+    <string name="back">Назад</string>
+    <string name="retry">Повторить</string>
+    <string name="cancel">Отмена</string>
+    <string name="save">Сохранить</string>
+    <string name="share">Поделиться</string>
+    <string name="delete">Удалить</string>
+    <string name="add">Добавить</string>
+    <string name="done">Готово</string>
+    <string name="clear">Очистить</string>
+    <string name="edit">Изменить</string>
+    <string name="skip">Пропустить</string>
+    <string name="continue_btn">Продолжить</string>
+    <string name="empty">Пусто</string>
+    <string name="send">Отправить</string>
+
+    <!-- Difficulty levels -->
+    <string name="difficulty_easy">Лёгкий</string>
+    <string name="difficulty_medium">Средний</string>
+    <string name="difficulty_hard">Сложный</string>
+    <string name="difficulty_expert">Экспертный</string>
+    <string name="difficulty_expert_short">Эксперт</string>
+
+    <!-- Time formatting -->
+    <string name="time_minutes">%d мин</string>
+    <string name="time_hours">%d ч</string>
+    <string name="time_hours_minutes">%d ч %d мин</string>
+
+    <!-- Feed screen -->
+    <string name="feed_title">TrailSocial</string>
+    <string name="feed_subtitle">Маршруты рядом с вами</string>
+    <string name="feed_create_route">Создать маршрут</string>
+    <string name="feed_search">Поиск</string>
+    <string name="feed_notifications">Уведомления</string>
+    <string name="filter_all">Все</string>
+    <string name="filter_easy">Лёгкие</string>
+    <string name="filter_moderate">Средние</string>
+    <string name="filter_hard">Сложные</string>
+    <string name="filter_expert">Экспертные</string>
+
+    <!-- Explore screen -->
+    <string name="explore_search">Поиск маршрутов</string>
+    <string name="explore_search_placeholder">Урал, Кавказ, Алтай…</string>
+    <string name="explore_popular_regions">Популярные регионы</string>
+    <string name="explore_users">Пользователи</string>
+    <string name="explore_all_routes">Все маршруты</string>
+    <string name="explore_results">Результаты</string>
+    <string name="region_ural">Урал</string>
+    <string name="region_caucasus">Кавказ</string>
+    <string name="region_altai">Алтай</string>
+    <string name="region_kamchatka">Камчатка</string>
+    <string name="region_karelia">Карелия</string>
+    <string name="region_siberia">Сибирь</string>
+
+    <!-- Route Builder screen -->
+    <string name="builder_title">AI-маршрут</string>
+    <string name="builder_step_format">Шаг %1$d из %2$d — %3$s</string>
+    <string name="builder_goal_title">Какова цель прогулки?</string>
+    <string name="builder_goal_subtitle">Выберите один вариант</string>
+    <string name="builder_company_title">С кем идёте?</string>
+    <string name="builder_time_title">Сколько времени есть?</string>
+    <string name="builder_distance_title">Желаемая дистанция</string>
+    <string name="builder_distance_subtitle">Сколько готовы пройти</string>
+    <string name="builder_pace_title">Темп ходьбы</string>
+    <string name="builder_terrain_title">Какая местность нравится?</string>
+    <string name="builder_terrain_subtitle">Можно выбрать несколько</string>
+    <string name="builder_terrain_selected">Выбрано: %s</string>
+    <string name="builder_details_title">Детали маршрута</string>
+    <string name="builder_details_subtitle">Уточните пожелания</string>
+    <string name="builder_start_point">Точка старта *</string>
+    <string name="builder_start_hint">Название района, станции метро, адрес…</string>
+    <string name="builder_want_to_see">Хочу увидеть / посетить</string>
+    <string name="builder_want_to_see_hint">Парк, пруд, старинная церковь, граффити…</string>
+    <string name="builder_avoid">Чего избегать</string>
+    <string name="builder_avoid_hint">Шумные дороги, крутые подъёмы, стройки…</string>
+    <string name="builder_extra_title">Дополнительно</string>
+    <string name="builder_extra_subtitle">Необязательно, но поможет уточнить маршрут</string>
+    <string name="builder_dog_friendly">Маршрут подходит для собак</string>
+    <string name="builder_cafe_nearby">Желательно кафе / кофейня рядом</string>
+    <string name="builder_toilets">Наличие туалетов</string>
+    <string name="builder_accessible">Без ступеней и барьеров</string>
+    <string name="builder_ai_hint">После нажатия «Сгенерировать» AI составит маршрут специально для вас на основе ваших ответов</string>
+    <string name="builder_back">Назад</string>
+    <string name="builder_generate">Сгенерировать маршрут</string>
+    <string name="builder_next">Далее</string>
+    <string name="builder_generating">AI строит ваш маршрут…</string>
+    <string name="builder_generating_wait">Это может занять несколько секунд</string>
+    <string name="builder_error">Не удалось составить маршрут</string>
+    <string name="builder_try_again">Попробовать снова</string>
+
+    <!-- Profile screen -->
+    <string name="profile_default_title">Путешественник</string>
+    <string name="profile_settings">Настройки</string>
+    <string name="profile_routes">Маршруты</string>
+    <string name="profile_followers">Подписчики</string>
+    <string name="profile_following">Подписки</string>
+    <string name="profile_my_cities">Мои города</string>
+    <string name="profile_interests">Интересы</string>
+    <string name="profile_about">О себе</string>
+    <string name="profile_logout">Выйти из аккаунта</string>
+    <string name="profile_logout_confirm">Выйти из аккаунта?</string>
+    <string name="profile_logout_message">Вы будете перенаправлены на экран входа.</string>
+    <string name="profile_logout_action">Выйти</string>
+
+    <!-- Route Detail screen -->
+    <string name="route_not_found">Маршрут не найден</string>
+    <string name="route_share_title">Поделиться маршрутом</string>
+    <string name="route_add_comment">Добавить комментарий…</string>
+    <string name="route_subscribe">Подписаться</string>
+    <string name="route_unsubscribe">Отписаться</string>
+    <string name="route_comments_likes">%1$d комментариев · %2$d лайков</string>
+    <string name="route_characteristics">Характеристики маршрута</string>
+    <string name="route_description">Описание</string>
+    <string name="route_tags">Теги</string>
+    <string name="route_comments">Комментарии (%d)</string>
+    <string name="route_no_comments">Пока нет комментариев</string>
+
+    <!-- Route Create screen -->
+    <string name="create_title">Новый маршрут</string>
+    <string name="create_name">Название *</string>
+    <string name="create_description">Описание</string>
+    <string name="create_region">Регион</string>
+    <string name="create_map_route">Маршрут на карте *</string>
+    <string name="create_map_info">%1$.1f км · %2$d точек</string>
+    <string name="create_draw_route">Нарисовать маршрут на карте</string>
+    <string name="create_time">Время (мин)</string>
+    <string name="create_difficulty">Сложность</string>
+    <string name="create_tags">Теги</string>
+    <string name="create_new_tag">Новый тег</string>
+    <string name="create_submit">Создать</string>
+    <string name="create_save_draft">Сохранить черновик</string>
+
+    <!-- Route Result screen -->
+    <string name="result_rebuild">Перестроить</string>
+    <string name="result_share">Поделиться маршрутом</string>
+    <string name="result_tab_map">Карта</string>
+    <string name="result_tab_details">Детали</string>
+    <string name="result_distance">Дистанция</string>
+    <string name="result_time">Время</string>
+    <string name="result_points">Точек</string>
+    <string name="result_waypoints">Точки маршрута</string>
+    <string name="result_tips">Советы</string>
+    <string name="result_publishing">Сохранение…</string>
+    <string name="result_publish">Опубликовать маршрут</string>
+
+    <!-- Notifications screen -->
+    <string name="notifications_title">Уведомления</string>
+    <string name="notifications_read_all">Прочитать все</string>
+    <string name="notifications_empty">Пока нет уведомлений</string>
+    <string name="notification_new_follower">%s подписался на вас</string>
+    <string name="notification_route_like">%1$s оценил маршрут \"%2$s\"</string>
+    <string name="notification_new_comment">%1$s: %2$s</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Настройки</string>
+    <string name="settings_appearance">Оформление</string>
+    <string name="settings_dark_theme">Тёмная тема</string>
+    <string name="settings_dark_on">Включена</string>
+    <string name="settings_dark_off">Выключена</string>
+    <string name="settings_language">Язык</string>
+    <string name="settings_lang_ru">Русский</string>
+    <string name="settings_lang_en">English</string>
+    <string name="settings_about">О приложении</string>
+    <string name="settings_version">Версия 1.0.0</string>
+
+    <!-- User Profile screen -->
+    <string name="user_routes">Маршруты</string>
+
+    <!-- Route Map Picker screen -->
+    <string name="map_picker_title">Построение маршрута</string>
+    <string name="map_picker_undo">Отменить последнюю точку</string>
+    <string name="map_picker_hint_first">Нажмите на карту для добавления первой точки</string>
+    <string name="map_picker_hint_more">Добавьте ещё хотя бы одну точку</string>
+    <string name="map_picker_info">%1$d точек · %2$.1f км</string>
+    <string name="map_picker_distance">Дистанция</string>
+    <string name="map_picker_points">Точек</string>
+
+    <!-- Login screen -->
+    <string name="login_title">TrailSocial</string>
+    <string name="login_subtitle">Войдите в аккаунт</string>
+    <string name="login_email">Email</string>
+    <string name="login_password">Пароль</string>
+    <string name="login_submit">Войти</string>
+    <string name="login_register">Нет аккаунта? Зарегистрироваться</string>
+    <string name="login_show_password">Показать пароль</string>
+
+    <!-- Onboarding: Welcome -->
+    <string name="welcome_title">TrailSocial</string>
+    <string name="welcome_description">Открывайте пешие маршруты,\nделитесь впечатлениями,\nнаходите единомышленников.</string>
+    <string name="welcome_feature1">Лента маршрутов от таких же туристов</string>
+    <string name="welcome_feature2">Маршруты по вашему городу и региону</string>
+    <string name="welcome_feature3">Сообщество любителей пеших прогулок</string>
+    <string name="welcome_start">Начать — это бесплатно</string>
+    <string name="welcome_login">Уже есть аккаунт? Войти</string>
+    <string name="welcome_terms">Нажимая «Начать», вы соглашаетесь с Условиями использования и Политикой конфиденциальности</string>
+
+    <!-- Onboarding: City -->
+    <string name="city_title">Где хотите гулять?</string>
+    <string name="city_subtitle">Выберите один или несколько городов — подберём маршруты поблизости</string>
+    <string name="city_selected">Выбрано: %1$d %2$s</string>
+
+    <!-- Onboarding: Fitness -->
+    <string name="fitness_title">Уровень физической подготовки</string>
+    <string name="fitness_subtitle">Подберём маршруты, которые вам понравятся и будут по силам</string>
+
+    <!-- Onboarding: Interests -->
+    <string name="interests_title">Что вас интересует?</string>
+    <string name="interests_subtitle">Отметьте темы — будем показывать подходящие маршруты</string>
+    <string name="interests_great">Отлично! Выбрано %d интереса. На основе этого подберём лучшие маршруты.</string>
+    <string name="interests_selected">Выбрано: %d</string>
+
+    <!-- Onboarding: Profile Setup -->
+    <string name="setup_title">Создайте профиль</string>
+    <string name="setup_subtitle">Чтобы делиться маршрутами и общаться с сообществом</string>
+    <string name="setup_name">Ваше имя</string>
+    <string name="setup_name_hint">Как вас зовут?</string>
+    <string name="setup_username">Имя пользователя</string>
+    <string name="setup_username_hint">username (латиница)</string>
+    <string name="setup_email">Email</string>
+    <string name="setup_email_hint">your@email.com</string>
+    <string name="setup_password">Пароль</string>
+    <string name="setup_password_hint">Минимум 6 символов</string>
+    <string name="setup_show_password">Показать пароль</string>
+    <string name="setup_registering">Создаём профиль…</string>
+    <string name="setup_register">Зарегистрироваться</string>
+    <string name="setup_skip">Войти позже / использовать без аккаунта</string>
+    <string name="setup_preferences">Ваши предпочтения</string>
+    <string name="setup_cities_selected">%d город(а) выбрано</string>
+    <string name="setup_interests_selected">%d интереса выбрано</string>
 </resources>
