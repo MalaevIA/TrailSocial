@@ -91,6 +91,7 @@ private data class RouteMapData(
     val endLng: Double,
     val geometry: List<List<Double>>,
     val distanceKm: Double,
+    val durationMinutes: Int = 0,
     val waypoints: List<com.trail2.ui.screens.WaypointEntry> = emptyList()
 )
 
@@ -134,6 +135,13 @@ fun MainAppContent() {
         is Screen.RouteCreate -> {
             val createVm: com.trail2.ui.viewmodels.RouteCreateViewModel = hiltViewModel()
 
+            // Reset form when entering fresh (not returning from map picker)
+            LaunchedEffect(Unit) {
+                if (routeMapResult == null) {
+                    createVm.resetForm()
+                }
+            }
+
             // Apply map result when returning from picker
             LaunchedEffect(routeMapResult) {
                 routeMapResult?.let { data ->
@@ -142,6 +150,7 @@ fun MainAppContent() {
                         data.endLat, data.endLng,
                         data.geometry,
                         data.distanceKm,
+                        data.durationMinutes,
                         data.waypoints
                     )
                     routeMapResult = null
@@ -159,8 +168,8 @@ fun MainAppContent() {
         is Screen.RouteMapPicker -> {
             RouteMapPickerScreen(
                 onBack = { currentScreen = Screen.RouteCreate },
-                onRouteSelected = { startLat, startLng, endLat, endLng, geometry, distanceKm, waypoints ->
-                    routeMapResult = RouteMapData(startLat, startLng, endLat, endLng, geometry, distanceKm, waypoints)
+                onRouteSelected = { startLat, startLng, endLat, endLng, geometry, distanceKm, durationMinutes, waypoints ->
+                    routeMapResult = RouteMapData(startLat, startLng, endLat, endLng, geometry, distanceKm, durationMinutes, waypoints)
                     currentScreen = Screen.RouteCreate
                 }
             )

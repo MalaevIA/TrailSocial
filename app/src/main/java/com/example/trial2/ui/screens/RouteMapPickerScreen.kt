@@ -70,6 +70,7 @@ fun RouteMapPickerScreen(
         endLat: Double, endLng: Double,
         geometry: List<List<Double>>,
         distanceKm: Double,
+        durationMinutes: Int,
         waypoints: List<WaypointEntry>
     ) -> Unit
 ) {
@@ -77,6 +78,7 @@ fun RouteMapPickerScreen(
     var waypoints by remember { mutableStateOf(listOf<WaypointEntry>()) }
     val points by remember { derivedStateOf { waypoints.map { it.point } } }
     var distanceKm by remember { mutableDoubleStateOf(0.0) }
+    var durationMinutes by remember { mutableIntStateOf(0) }
     var routeGeometry by remember { mutableStateOf<List<Point>>(emptyList()) }
     var isRoutingInProgress by remember { mutableStateOf(false) }
     val mapView = remember { MapView(context) }
@@ -162,14 +164,17 @@ fun RouteMapPickerScreen(
                 points = newPoints,
                 mapView = mapView,
                 routerSession = routerSession,
-                onResult = { geometry, distance ->
+                onResult = { geometry, distance, duration ->
                     routeGeometry = geometry
                     distanceKm = distance
+                    durationMinutes = duration
                     isRoutingInProgress = false
                 },
                 onFallback = {
                     routeGeometry = newPoints
-                    distanceKm = totalDistanceKm(newPoints)
+                    val dist = totalDistanceKm(newPoints)
+                    distanceKm = dist
+                    durationMinutes = (dist / 5.0 * 60).toInt() // ~5 km/h walking speed
                     drawFallbackPolyline(mapView, newPoints)
                     isRoutingInProgress = false
                 }
@@ -177,6 +182,7 @@ fun RouteMapPickerScreen(
         } else {
             routeGeometry = emptyList()
             distanceKm = 0.0
+            durationMinutes = 0
         }
 
         // Move camera to the new point
@@ -286,20 +292,24 @@ fun RouteMapPickerScreen(
                                         points = newPoints,
                                         mapView = mapView,
                                         routerSession = routerSession,
-                                        onResult = { geometry, distance ->
+                                        onResult = { geometry, distance, duration ->
                                             routeGeometry = geometry
                                             distanceKm = distance
+                                            durationMinutes = duration
                                             isRoutingInProgress = false
                                         },
                                         onFallback = {
                                             routeGeometry = newPoints
-                                            distanceKm = totalDistanceKm(newPoints)
+                                            val dist = totalDistanceKm(newPoints)
+                                            distanceKm = dist
+                                            durationMinutes = (dist / 5.0 * 60).toInt()
                                             drawFallbackPolyline(mapView, newPoints)
                                             isRoutingInProgress = false
                                         }
                                     )
                                 } else {
                                     distanceKm = 0.0
+                                    durationMinutes = 0
                                     val map = mapView.mapWindow.map
                                     map.mapObjects.clear()
                                     drawMarkers(mapView, newPoints)
@@ -341,6 +351,7 @@ fun RouteMapPickerScreen(
                             onClick = {
                                 waypoints = emptyList()
                                 distanceKm = 0.0
+                                durationMinutes = 0
                                 routeGeometry = emptyList()
                                 mapView.mapWindow.map.mapObjects.clear()
                             },
@@ -363,6 +374,7 @@ fun RouteMapPickerScreen(
                                     first.latitude, first.longitude,
                                     last.latitude, last.longitude,
                                     geometryToSend, distanceKm,
+                                    durationMinutes,
                                     waypoints
                                 )
                             },
@@ -568,7 +580,7 @@ private fun requestPedestrianRoute(
     points: List<Point>,
     mapView: MapView,
     routerSession: MutableState<Session?>,
-    onResult: (geometry: List<Point>, distanceKm: Double) -> Unit,
+    onResult: (geometry: List<Point>, distanceKm: Double, durationMinutes: Int) -> Unit,
     onFallback: () -> Unit
 ) {
     val requestPoints = points.mapIndexed { idx, point ->
@@ -590,6 +602,8 @@ private fun requestPedestrianRoute(
                     val weight = metadata.weight
                     val walkingDistance = weight.walkingDistance.value
                     val distKm = walkingDistance / 1000.0
+                    val walkingTime = weight.time.value // seconds
+                    val durMinutes = (walkingTime / 60).toInt()
 
                     val map = mapView.mapWindow.map
                     map.mapObjects.clear()
@@ -602,7 +616,7 @@ private fun requestPedestrianRoute(
                         outlineWidth = 2f
                     }
 
-                    onResult(geometryPoints, distKm)
+                    onResult(geometryPoints, distKm, durMinutes)
                 } else {
                     onFallback()
                 }

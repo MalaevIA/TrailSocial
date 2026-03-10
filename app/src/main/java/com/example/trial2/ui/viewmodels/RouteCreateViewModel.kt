@@ -8,6 +8,14 @@ import com.trail2.data.remote.dto.WaypointDto
 import com.trail2.data.repository.RouteRepository
 import com.trail2.data.repository.UploadRepository
 import com.trail2.ui.screens.WaypointEntry
+import com.yandex.mapkit.geometry.Point
+import com.yandex.mapkit.search.Response
+import com.yandex.mapkit.search.SearchFactory
+import com.yandex.mapkit.search.SearchManagerType
+import com.yandex.mapkit.search.SearchOptions
+import com.yandex.mapkit.search.SearchType
+import com.yandex.mapkit.search.Session
+import com.yandex.runtime.Error
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,6 +68,10 @@ class RouteCreateViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RouteCreateUiState())
     val uiState: StateFlow<RouteCreateUiState> = _uiState.asStateFlow()
 
+    fun resetForm() {
+        _uiState.value = RouteCreateUiState()
+    }
+
     fun onTitleChange(v: String) = updateForm { copy(title = v) }
     fun onDescriptionChange(v: String) = updateForm { copy(description = v) }
     fun onRegionChange(v: String) = updateForm { copy(region = v) }
@@ -81,15 +93,23 @@ class RouteCreateViewModel @Inject constructor(
         endLat: Double, endLng: Double,
         geometry: List<List<Double>>,
         distanceKm: Double,
+        durationMinutes: Int = 0,
         waypoints: List<WaypointEntry> = emptyList()
-    ) = updateForm {
-        copy(
-            startLat = startLat, startLng = startLng,
-            endLat = endLat, endLng = endLng,
-            geometry = geometry,
-            distanceKm = distanceKm,
-            waypoints = waypoints
-        )
+    ) {
+        updateForm {
+            copy(
+                startLat = startLat, startLng = startLng,
+                endLat = endLat, endLng = endLng,
+                geometry = geometry,
+                distanceKm = distanceKm,
+                durationMinutes = if (durationMinutes > 0) durationMinutes.toString() else "",
+                waypoints = waypoints
+            )
+        }
+        // Reverse-geocode start point for region
+        if (_uiState.value.form.region.isBlank()) {
+            reverseGeocodeRegion(startLat, startLng)
+        }
     }
 
     fun clearRouteCoordinates() = updateForm {
@@ -162,6 +182,39 @@ class RouteCreateViewModel @Inject constructor(
                 is ApiResult.NetworkError -> _uiState.update { it.copy(isSubmitting = false, error = "Нет подключения") }
             }
         }
+    }
+
+    private var geocodeSession: Session? = null
+
+    private fun reverseGeocodeRegion(lat: Double, lng: Double) {
+        val searchManager = SearchFactory.getInstance().createSearchManager(SearchManagerType.ONLINE)
+        val options = SearchOptions().setSearchTypes(SearchType.GEO.value)
+        geocodeSession = searchManager.submit(
+            Point(lat, lng),
+            17,
+            options,
+            object : Session.SearchListener {
+                override fun onSearchResponse(response: Response) {
+                    val geoObject = response.collection.children.firstOrNull()?.obj ?: return
+                    val components = geoObject.metadataContainer
+                        .getItem(com.yandex.mapkit.search.ToponymObjectMetadata::class.java)
+                        ?.address?.components ?: return
+
+                    // Find city or locality, fallback to province
+                    val city = components.firstOrNull {
+                        it.kinds.any { k -> k == com.yandex.mapkit.search.Address.Component.Kind.LOCALITY }
+                    }?.name
+                    val province = components.firstOrNull {
+                        it.kinds.any { k -> k == com.yandex.mapkit.search.Address.Component.Kind.PROVINCE }
+                    }?.name
+
+                    val region = city ?: province ?: return
+                    updateForm { copy(region = region) }
+                }
+
+                override fun onSearchError(error: Error) { /* ignore */ }
+            }
+        )
     }
 
     private fun updateForm(block: RouteCreateForm.() -> RouteCreateForm) {

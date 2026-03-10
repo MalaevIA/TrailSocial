@@ -106,13 +106,27 @@ fun RouteCreateScreen(
                 // Read-only stats
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        "${"%.2f".format(form.distanceKm ?: 0.0)} км · ${form.pointCount} точек",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column {
+                        Text(
+                            "${"%.2f".format(form.distanceKm ?: 0.0)} км · ${form.pointCount} точек",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (form.durationMinutes.isNotBlank()) {
+                            val mins = form.durationMinutes.toIntOrNull() ?: 0
+                            val hours = mins / 60
+                            val remMins = mins % 60
+                            val timeText = if (hours > 0) "${hours} ч ${remMins} мин" else "$mins мин"
+                            Text(
+                                "~$timeText пешком",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                     TextButton(onClick = onPickRoute) {
                         Text(stringResource(R.string.edit))
                     }
@@ -167,16 +181,6 @@ fun RouteCreateScreen(
                     Text(stringResource(R.string.create_draw_route))
                 }
             }
-
-            // ── Duration ──
-            OutlinedTextField(
-                value = form.durationMinutes,
-                onValueChange = vm::onDurationChange,
-                label = { Text(stringResource(R.string.create_time)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
 
             // ── Difficulty ──
             Text(stringResource(R.string.create_difficulty), style = MaterialTheme.typography.labelLarge)

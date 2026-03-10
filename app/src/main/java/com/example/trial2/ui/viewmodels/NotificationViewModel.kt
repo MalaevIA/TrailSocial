@@ -46,8 +46,14 @@ class NotificationViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             when (val result = notificationRepository.getNotifications()) {
-                is ApiResult.Success -> _uiState.update {
-                    it.copy(notifications = result.data.items, isLoading = false)
+                is ApiResult.Success -> {
+                    _uiState.update {
+                        it.copy(notifications = result.data.items, isLoading = false)
+                    }
+                    // Auto-mark all as read when viewing notifications
+                    if (_uiState.value.unreadCount > 0) {
+                        markAllRead()
+                    }
                 }
                 is ApiResult.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
                 is ApiResult.NetworkError -> _uiState.update { it.copy(isLoading = false, error = "Нет подключения") }
