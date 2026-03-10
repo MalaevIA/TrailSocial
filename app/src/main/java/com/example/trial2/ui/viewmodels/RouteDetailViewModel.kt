@@ -22,7 +22,8 @@ data class RouteDetailUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val commentText: String = "",
-    val isSendingComment: Boolean = false
+    val isSendingComment: Boolean = false,
+    val isNavigating: Boolean = false
 )
 
 @HiltViewModel
@@ -91,10 +92,11 @@ class RouteDetailViewModel @Inject constructor(
                 routeRepository.likeRoute(route.id)
             }
             if (result is ApiResult.Success) {
-                _uiState.update {
-                    it.copy(route = route.copy(
-                        isLiked = !route.isLiked,
-                        likesCount = route.likesCount + if (route.isLiked) -1 else 1
+                _uiState.update { state ->
+                    val current = state.route ?: return@update state
+                    state.copy(route = current.copy(
+                        isLiked = !current.isLiked,
+                        likesCount = current.likesCount + if (current.isLiked) -1 else 1
                     ))
                 }
             }
@@ -110,14 +112,23 @@ class RouteDetailViewModel @Inject constructor(
                 routeRepository.saveRoute(route.id)
             }
             if (result is ApiResult.Success) {
-                _uiState.update {
-                    it.copy(route = route.copy(
-                        isSaved = !route.isSaved,
-                        savesCount = route.savesCount + if (route.isSaved) -1 else 1
+                _uiState.update { state ->
+                    val current = state.route ?: return@update state
+                    state.copy(route = current.copy(
+                        isSaved = !current.isSaved,
+                        savesCount = current.savesCount + if (current.isSaved) -1 else 1
                     ))
                 }
             }
         }
+    }
+
+    fun startNavigation() {
+        _uiState.update { it.copy(isNavigating = true) }
+    }
+
+    fun stopNavigation() {
+        _uiState.update { it.copy(isNavigating = false) }
     }
 
     fun toggleFollow() {
@@ -130,9 +141,10 @@ class RouteDetailViewModel @Inject constructor(
                 userRepository.follow(author.id)
             }
             if (result is ApiResult.Success) {
-                _uiState.update {
-                    it.copy(route = route.copy(
-                        author = author.copy(isFollowing = !author.isFollowing)
+                _uiState.update { state ->
+                    val current = state.route ?: return@update state
+                    state.copy(route = current.copy(
+                        author = current.author.copy(isFollowing = !current.author.isFollowing)
                     ))
                 }
             }

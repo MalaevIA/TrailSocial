@@ -2,6 +2,8 @@ package com.trail2.ui.screens
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
@@ -21,9 +24,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.trail2.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.FollowListType
+import com.trail2.data.TrailRoute
 import com.trail2.onboarding.FitnessLevel
 import com.trail2.onboarding.OnboardingData
 import com.trail2.onboarding.OnboardingViewModel
+import com.trail2.ui.components.RouteCard
 import com.trail2.ui.viewmodels.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -35,6 +40,11 @@ fun ProfileScreen(
     profileVm: ProfileViewModel = hiltViewModel(),
     onboardingVm: OnboardingViewModel = hiltViewModel()
 ) {
+    // Перезагружаем данные при каждом заходе на экран
+    LaunchedEffect(Unit) {
+        profileVm.loadProfile()
+    }
+
     var showLogoutDialog by remember { mutableStateOf(false) }
     val profileState by profileVm.uiState.collectAsStateWithLifecycle()
     val onboardingAnswers by onboardingVm.savedAnswers.collectAsStateWithLifecycle()
@@ -43,167 +53,228 @@ fun ProfileScreen(
     val fallbackName = stringResource(R.string.profile_default_title)
     val displayName = user?.name ?: onboardingAnswers.displayName.ifBlank { fallbackName }
 
-    val selectedCities = remember(onboardingAnswers.selectedCityIds) {
-        OnboardingData.cities.filter { it.id in onboardingAnswers.selectedCityIds }
+    val selectedCityNames = remember(onboardingAnswers.selectedCityIds) {
+        onboardingAnswers.selectedCityIds.map { id ->
+            OnboardingData.cities.find { it.id == id }?.name ?: id
+        }
     }
     val selectedInterests = remember(onboardingAnswers.selectedInterestIds) {
         OnboardingData.interests.filter { it.id in onboardingAnswers.selectedInterestIds }
     }
 
-    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .background(Brush.verticalGradient(listOf(Color(0xFF1B4332), Color(0xFF52B788))))
-        ) {
-            IconButton(
-                onClick = onSettingsClick,
-                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val myRoutes = profileState.myRoutes
+    val savedRoutes = profileState.savedRoutes
+
+    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+        // Header gradient
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .background(Brush.verticalGradient(listOf(Color(0xFF1B4332), Color(0xFF52B788))))
             ) {
-                Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.profile_settings), tint = Color.White)
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                ) {
+                    Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.profile_settings), tint = Color.White)
+                }
             }
         }
 
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            Box(modifier = Modifier.offset(y = (-44).dp)) {
-                Box(
-                    modifier = Modifier
-                        .size(88.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF2D6A4F))
-                        .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(displayName.take(1).uppercase(), fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            }
-
-            Text(displayName, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.offset(y = (-28).dp))
-            if (user != null) {
-                Text("@${user.username}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.offset(y = (-24).dp))
-            }
-
-            Spacer(Modifier.height(4.dp))
-
-            onboardingAnswers.fitnessLevel?.let { level ->
-                FitnessLevelBadge(level)
-                Spacer(Modifier.height(12.dp))
-            }
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                ProfileStatItem(stringResource(R.string.profile_routes), "${user?.routesCount ?: 0}")
-                VerticalDivider(Modifier.height(36.dp))
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable {
-                        user?.let { onFollowListClick(it.id, FollowListType.FOLLOWERS) }
+        // Profile info
+        item {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                Box(modifier = Modifier.offset(y = (-44).dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(88.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF2D6A4F))
+                            .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(displayName.take(1).uppercase(), fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
-                ) {
-                    Text("${user?.followersCount ?: 0}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                    Text(stringResource(R.string.profile_followers), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                VerticalDivider(Modifier.height(36.dp))
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.clickable {
-                        user?.let { onFollowListClick(it.id, FollowListType.FOLLOWING) }
+
+                Text(displayName, fontWeight = FontWeight.Bold, fontSize = 22.sp, modifier = Modifier.offset(y = (-28).dp))
+                if (user != null) {
+                    Text("@${user.username}", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.offset(y = (-24).dp))
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                onboardingAnswers.fitnessLevel?.let { level ->
+                    FitnessLevelBadge(level)
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    ProfileStatItem(stringResource(R.string.profile_routes), "${user?.routesCount ?: 0}")
+                    VerticalDivider(Modifier.height(36.dp))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable {
+                            user?.let { onFollowListClick(it.id, FollowListType.FOLLOWERS) }
+                        }
+                    ) {
+                        Text("${user?.followersCount ?: 0}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Text(stringResource(R.string.profile_followers), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                ) {
-                    Text("${user?.followingCount ?: 0}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                    Text(stringResource(R.string.profile_following), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    VerticalDivider(Modifier.height(36.dp))
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.clickable {
+                            user?.let { onFollowListClick(it.id, FollowListType.FOLLOWING) }
+                        }
+                    ) {
+                        Text("${user?.followingCount ?: 0}", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Text(stringResource(R.string.profile_following), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
-            }
 
-            Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(20.dp))
 
-            if (selectedCities.isNotEmpty()) {
-                SectionTitle(stringResource(R.string.profile_my_cities))
-                Spacer(Modifier.height(8.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    selectedCities.forEach { city ->
-                        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primaryContainer) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(Icons.Filled.LocationOn, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                                Text(city.name, fontSize = 13.sp, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Medium)
+                if (selectedCityNames.isNotEmpty()) {
+                    SectionTitle(stringResource(R.string.profile_my_cities))
+                    Spacer(Modifier.height(8.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        selectedCityNames.forEach { cityName ->
+                            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Icon(Icons.Filled.LocationOn, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                                    Text(cityName, fontSize = 13.sp, color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Medium)
+                                }
                             }
                         }
                     }
+                    Spacer(Modifier.height(20.dp))
                 }
-                Spacer(Modifier.height(20.dp))
-            }
 
-            if (selectedInterests.isNotEmpty()) {
-                SectionTitle(stringResource(R.string.profile_interests))
-                Spacer(Modifier.height(8.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    selectedInterests.forEach { interest ->
-                        Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
-                            Text(
-                                "${interest.emoji} ${interest.label}",
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                if (selectedInterests.isNotEmpty()) {
+                    SectionTitle(stringResource(R.string.profile_interests))
+                    Spacer(Modifier.height(8.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        selectedInterests.forEach { interest ->
+                            Surface(shape = RoundedCornerShape(20.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
+                                Text(
+                                    "${interest.emoji} ${interest.label}",
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
+                    Spacer(Modifier.height(20.dp))
                 }
-                Spacer(Modifier.height(20.dp))
+
+                if (user?.bio?.isNotBlank() == true) {
+                    SectionTitle(stringResource(R.string.profile_about))
+                    Spacer(Modifier.height(4.dp))
+                    Text(user.bio, fontSize = 14.sp)
+                    Spacer(Modifier.height(20.dp))
+                }
             }
+        }
 
-            if (user?.bio?.isNotBlank() == true) {
-                SectionTitle(stringResource(R.string.profile_about))
-                Spacer(Modifier.height(4.dp))
-                Text(user.bio, fontSize = 14.sp)
-                Spacer(Modifier.height(20.dp))
-            }
-
-            HorizontalDivider()
-            Spacer(Modifier.height(12.dp))
-
-            OutlinedButton(
-                onClick = { showLogoutDialog = true },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Icon(Icons.Outlined.Logout, null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.profile_logout))
-            }
-
-            if (showLogoutDialog) {
-                AlertDialog(
-                    onDismissRequest = { showLogoutDialog = false },
-                    title = { Text(stringResource(R.string.profile_logout_confirm)) },
-                    text = { Text(stringResource(R.string.profile_logout_message)) },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            profileVm.logout()
-                            onboardingVm.logout()
-                            showLogoutDialog = false
-                        }) {
-                            Text(stringResource(R.string.profile_logout_action), color = MaterialTheme.colorScheme.error)
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showLogoutDialog = false }) { Text(stringResource(R.string.cancel)) }
-                    }
+        // Tabs: My Routes / Saved
+        item {
+            TabRow(selectedTabIndex = selectedTab) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text(stringResource(R.string.profile_tab_routes)) },
+                    icon = { Icon(Icons.Outlined.Map, null, modifier = Modifier.size(18.dp)) }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = { selectedTab = 1 },
+                    text = { Text(stringResource(R.string.profile_tab_saved)) },
+                    icon = { Icon(Icons.Outlined.Bookmark, null, modifier = Modifier.size(18.dp)) }
                 )
             }
-
-            Spacer(Modifier.height(80.dp))
         }
+
+        // Routes content
+        val routes = if (selectedTab == 0) myRoutes else savedRoutes
+        if (routes.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (selectedTab == 0) stringResource(R.string.profile_no_routes) else stringResource(R.string.profile_no_saved),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            items(routes, key = { it.id }) { route ->
+                RouteCard(
+                    route = route,
+                    onClick = { onRouteClick(route.id) },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+        }
+
+        // Logout button
+        item {
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                Spacer(Modifier.height(16.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = { showLogoutDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(Icons.Outlined.Logout, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.profile_logout))
+                }
+
+                Spacer(Modifier.height(120.dp))
+            }
+        }
+    }
+
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text(stringResource(R.string.profile_logout_confirm)) },
+            text = { Text(stringResource(R.string.profile_logout_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    profileVm.logout()
+                    onboardingVm.logout()
+                    showLogoutDialog = false
+                }) {
+                    Text(stringResource(R.string.profile_logout_action), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) { Text(stringResource(R.string.cancel)) }
+            }
+        )
     }
 }
 

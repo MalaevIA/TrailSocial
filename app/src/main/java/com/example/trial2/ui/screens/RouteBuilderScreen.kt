@@ -281,7 +281,7 @@ private fun StepScroll(content: @Composable ColumnScope.() -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
+                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 130.dp),
             content = content
         )
     }

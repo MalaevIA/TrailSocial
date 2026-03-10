@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">TrailSocial</string>
+    <string name="app_name">Верста</string>
 
     <!-- Bottom navigation tabs -->
     <string name="tab_feed">Лента</string>
@@ -36,7 +36,7 @@
     <string name="time_hours_minutes">%d ч %d мин</string>
 
     <!-- Feed screen -->
-    <string name="feed_title">TrailSocial</string>
+    <string name="feed_title">Верста</string>
     <string name="feed_subtitle">Маршруты рядом с вами</string>
     <string name="feed_create_route">Создать маршрут</string>
     <string name="feed_search">Поиск</string>
@@ -110,6 +110,10 @@
     <string name="profile_logout_confirm">Выйти из аккаунта?</string>
     <string name="profile_logout_message">Вы будете перенаправлены на экран входа.</string>
     <string name="profile_logout_action">Выйти</string>
+    <string name="profile_tab_routes">Маршруты</string>
+    <string name="profile_tab_saved">Избранное</string>
+    <string name="profile_no_routes">Пока нет маршрутов</string>
+    <string name="profile_no_saved">Нет сохранённых маршрутов</string>
 
     <!-- Route Detail screen -->
     <string name="route_not_found">Маршрут не найден</string>
@@ -117,6 +121,10 @@
     <string name="route_add_comment">Добавить комментарий…</string>
     <string name="route_subscribe">Подписаться</string>
     <string name="route_unsubscribe">Отписаться</string>
+    <string name="route_start_walking">Начать прогулку</string>
+    <string name="route_stop_walking">Завершить</string>
+    <string name="route_walking_title">Навигация по маршруту</string>
+    <string name="route_no_map">Карта маршрута недоступна</string>
     <string name="route_comments_likes">%1$d комментариев · %2$d лайков</string>
     <string name="route_characteristics">Характеристики маршрута</string>
     <string name="route_description">Описание</string>
@@ -185,7 +193,7 @@
     <string name="map_picker_points">Точек</string>
 
     <!-- Login screen -->
-    <string name="login_title">TrailSocial</string>
+    <string name="login_title">Верста</string>
     <string name="login_subtitle">Войдите в аккаунт</string>
     <string name="login_email">Email</string>
     <string name="login_password">Пароль</string>
@@ -194,7 +202,7 @@
     <string name="login_show_password">Показать пароль</string>
 
     <!-- Onboarding: Welcome -->
-    <string name="welcome_title">TrailSocial</string>
+    <string name="welcome_title">Верста</string>
     <string name="welcome_description">Открывайте пешие маршруты,\nделитесь впечатлениями,\nнаходите единомышленников.</string>
     <string name="welcome_feature1">Лента маршрутов от таких же туристов</string>
     <string name="welcome_feature2">Маршруты по вашему городу и региону</string>
@@ -207,6 +215,8 @@
     <string name="city_title">Где хотите гулять?</string>
     <string name="city_subtitle">Выберите один или несколько городов — подберём маршруты поблизости</string>
     <string name="city_selected">Выбрано: %1$d %2$s</string>
+    <string name="city_search_hint">Поиск города…</string>
+    <string name="city_no_results">Ничего не найдено</string>
 
     <!-- Onboarding: Fitness -->
     <string name="fitness_title">Уровень физической подготовки</string>

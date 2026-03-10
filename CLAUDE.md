@@ -5,68 +5,83 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build Commands
 
 ```bash
-# Build debug APK
-./gradlew assembleDebug
-
-# Install on connected device/emulator
-./gradlew installDebug
-
-# Run unit tests
-./gradlew test
-
-# Run a single test class
-./gradlew test --tests "com.trail2.YourTestClass"
-
-# Run a single test method
-./gradlew test --tests "com.trail2.YourTestClass.methodName"
-
-# Run lint
-./gradlew lint
-
-# Clean build
-./gradlew clean assembleDebug
+./gradlew assembleDebug          # Build debug APK
+./gradlew installDebug           # Install on device/emulator
+./gradlew test                   # Run unit tests
+./gradlew test --tests "com.trail2.YourTestClass"          # Single test class
+./gradlew test --tests "com.trail2.YourTestClass.method"   # Single test method
+./gradlew lint                   # Run lint
+./gradlew clean assembleDebug    # Clean build
 ```
 
 ## Required Configuration
 
-Add `YANDEX_MAPKIT_KEY=<your_key>` to `local.properties` (not committed). Without it, the map composables will fail to initialize — the key is injected via `BuildConfig.YANDEX_MAPKIT_KEY` in `App.kt`.
+Add to `local.properties` (not committed):
+```
+YANDEX_MAPKIT_KEY=<your_key>
+```
+The key is injected via `BuildConfig.YANDEX_MAPKIT_KEY` in `App.kt`. Base URL for API is set in `build.gradle.kts` as `BuildConfig.BASE_URL` (currently `http://10.0.2.2:8000/api/v1/`).
 
 ## Critical Package/Path Quirk
 
 **Physical directory:** `app/src/main/java/com/example/trial2/`
-**Declared package:** `com.trail2.*` (set in `build.gradle.kts` namespace)
+**Declared package:** `com.trail2.*` (set in `build.gradle.kts` namespace + applicationId)
 
-Kotlin does not require the directory path to match the package name. All imports and class references use `com.trail2.*`. Do not "fix" this mismatch.
+Kotlin does not require the directory path to match the package name. All imports and class references use `com.trail2.*`. Do **not** "fix" this mismatch.
 
 ## Architecture
 
+### Tech Stack
+- Kotlin + Jetpack Compose (Material 3), Compile/Target SDK 36, Min SDK 26
+- Hilt 2.52 + KSP for DI, Retrofit + OkHttp + Kotlinx Serialization for networking
+- Yandex MapKit 4.8.1-full, DataStore Preferences, EncryptedSharedPreferences
+- MVVM: all ViewModels use `@HiltViewModel` + `StateFlow`
+
 ### Navigation
-Navigation uses a **custom state machine** (`mutableStateOf<Screen>`), NOT `NavController`/`NavHost`. The active navigation host is `Navigation.kt` (at package root, `package com.trail2`). There is a dead file at `ui/navigation/Navigation.kt` (`package com.trail2.ui.navigation`) — it is unused and should be ignored.
+Custom state machine (`mutableStateOf<Screen>`) in `Navigation.kt` (package `com.trail2`), **NOT** `NavController`/`NavHost`. There is a dead file at `ui/navigation/Navigation.kt` — it is unused.
 
-`AppNavigation` checks onboarding completion via `OnboardingViewModel.isOnboardingCompleted: StateFlow<Boolean?>` (`null` = loading splash, `false` = show onboarding, `true` = show main app). Main app uses `MainAppContent()` with a `Scaffold` + `NavigationBar` over 4 tabs.
+`AppNavigation` checks auth state: `isOnboardingCompleted` (`null` = splash, `false` = onboarding, `true` = check login). `MainAppContent()` renders a `Scaffold` + `NavigationBar` with 4 tabs (Feed, Explore, AI-Route, Profile). Non-tab screens (RouteDetail, Notifications, Settings, etc.) are rendered with early `return` before the Scaffold.
 
-### MVVM + Hilt DI
-All ViewModels use `@HiltViewModel` + `StateFlow`. DI modules live in `com.trail2.di`:
-- `DatabaseModule` — provides `AppDatabase` (Room), `RouteDao`, `UserDao`, `CommentDao`
-- `DataStoreModule` — provides `DataStore<Preferences>` for onboarding persistence
+`RouteBuilderViewModel` is hoisted to `MainAppContent` level so Navigation can call `resetFully()` when leaving RouteResultScreen.
 
-### Room Database
-Database name: `trail_social.db`. Entities: `UserEntity`, `RouteEntity`, `CommentEntity`.
-**Seeding:** On first install (`RoomDatabase.Callback.onCreate`), `DatabaseModule` seeds all tables from `SampleData.kt`.
-**Serialization:** `photos` stored as comma-separated string, `tags` as pipe-separated string in `RouteEntity`. Mappers in `data/local/Mappers.kt` handle Entity ↔ Domain conversions.
+### Authentication
+JWT-based auth with encrypted token storage:
+- `TokenManager` — stores access/refresh tokens in `EncryptedSharedPreferences`, exposes `isLoggedIn: StateFlow<Boolean>`
+- `AuthInterceptor` — adds `Authorization: Bearer` header (skips `/auth/*` endpoints)
+- `TokenAuthenticator` — on 401, refreshes token via `POST auth/refresh` (up to 2 retries), clears tokens on failure
+- `AuthRepository` — `signup()`, `login()`, `logout()` — saves tokens via `TokenManager`
 
-### Data Flow (Feed example)
-`FeedScreen` → `RouteViewModel` → `RouteRepository` → `RouteDao` + `UserDao` (combined via `Flow.combine`) → `Mappers.toDomain()` → UI state via `StateFlow`.
+### Data Layer (API-only, no local DB)
+All data flows through Retrofit. Room was removed — there is no local database.
 
-### Onboarding
-5-step flow (Welcome → City → Fitness → Interests → Profile) managed by `OnboardingViewModel` + `OnboardingRepository`. Answers persisted to `DataStore<Preferences>`. Completion flag stored in same DataStore; checked on every app launch.
+**DI modules** (`com.trail2.di`):
+- `NetworkModule` — OkHttp (30s connect, 120s read, 60s write), Retrofit, all 7 API interfaces
+- `AuthModule` — `TokenManager`
+- `DataStoreModule` — `DataStore<Preferences>` for onboarding/settings
+
+**7 API interfaces** in `data/remote/api/`: `AuthApi`, `RouteApi`, `UserApi`, `CommentApi`, `NotificationApi`, `AiRouteApi`, `UploadApi`, `ReportApi`
+
+**Error handling**: `ApiResult<T>` sealed class (`Success`/`Error`/`NetworkError`) + `safeApiCall()` wrapper that parses error JSON `detail` field.
+
+**DTO ↔ Domain mapping** in `data/remote/mappers/DtoMappers.kt`. Domain models in `data/Models.kt`.
 
 ### AI Route Builder
-`RouteBuilderScreen` drives a 5-step form (`BuilderStep` enum). `RouteBuilderViewModel` handles step navigation and validation. `RouteBuilderRepository.generateRoute()` is currently a **stub** — no real AI/API call implemented. The generated `GeneratedRoute` is passed directly to `RouteResultScreen` via the custom navigation state machine.
+Async generation with polling:
+1. `RouteBuilderScreen` — 5-step form (`BuilderStep` enum: GOAL → PARAMS → TERRAIN → DETAILS → EXTRAS)
+2. `RouteBuilderViewModel` — step navigation, validation, generation trigger, poll-count progress tracking
+3. `RouteBuilderRepository.generateRoute(form, onPollProgress)`:
+   - `POST ai/generate-route` → receives `task_id`
+   - Polls `GET ai/tasks/{taskId}` every 2 seconds (timeout: 5 minutes)
+   - `status: "completed"` → returns `GeneratedRoute`, `"failed"` → returns error
+4. `RouteResultScreen` + `RouteResultViewModel` — displays result, publishes route via `RouteRepository.createRoute()`, save/bookmark after publish
 
-## Known Incomplete Areas
+### Localization
+Full ru/en support. Default locale is Russian (`values/strings.xml`), English in `values-en/strings.xml`. All screens use `stringResource()`. Locale switching in `MainActivity` via `ContextWrapper` pattern that preserves the Activity context chain for Hilt compatibility.
 
-- `RouteRepository.getRouteById()` returns `null` (marked `TODO`) — `RouteDetailScreen` has no live data
-- No Retrofit/API layer — all data is local Room (seeded from `SampleData`)
-- No real authentication — onboarding saves credentials to DataStore in plaintext
-- Yandex MapKit is initialized but map composables are not yet integrated into screens
+### Onboarding
+5-step flow (Welcome → City → Fitness → Interests → Profile) managed by `OnboardingViewModel` + `OnboardingRepository`. Persisted to `DataStore<Preferences>`.
+
+### Key Enums
+- `Difficulty`: EASY, MODERATE, HARD, EXPERT — used in feed filters and route creation
+- `RouteStatus`: DRAFT, PRIVATE, PUBLISHED
+- `NotificationType`: NEW_FOLLOWER, ROUTE_LIKE, NEW_COMMENT

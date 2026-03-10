@@ -155,7 +155,7 @@ fun SettingsScreen(
                     )
                     Spacer(Modifier.width(16.dp))
                     Column {
-                        Text("TrailSocial", fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                        Text("Верста", fontSize = 15.sp, fontWeight = FontWeight.Medium)
                         Text(stringResource(R.string.settings_version), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }

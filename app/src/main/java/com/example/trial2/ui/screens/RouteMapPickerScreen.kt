@@ -19,12 +19,22 @@ import androidx.compose.ui.res.stringResource
 import com.trail2.R
 import com.trail2.ui.theme.ForestGreen
 import com.yandex.mapkit.MapKitFactory
+import com.yandex.mapkit.RequestPoint
+import com.yandex.mapkit.RequestPointType
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.geometry.Polyline
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.InputListener
 import com.yandex.mapkit.map.Map
 import com.yandex.mapkit.mapview.MapView
+import com.yandex.mapkit.transport.TransportFactory
+import com.yandex.mapkit.transport.masstransit.PedestrianRouter
+import com.yandex.mapkit.transport.masstransit.Route
+import com.yandex.mapkit.transport.masstransit.FitnessOptions
+import com.yandex.mapkit.transport.masstransit.RouteOptions
+import com.yandex.mapkit.transport.masstransit.Session
+import com.yandex.mapkit.transport.masstransit.TimeOptions
+import com.yandex.runtime.Error
 import com.yandex.runtime.image.ImageProvider
 import kotlin.math.*
 
@@ -40,10 +50,14 @@ fun RouteMapPickerScreen(
     ) -> Unit
 ) {
     val context = LocalContext.current
-    // Mutable list of route points (MapKit Point: lat, lng)
     var points by remember { mutableStateOf(listOf<Point>()) }
     var distanceKm by remember { mutableDoubleStateOf(0.0) }
+    // Геометрия реального маршрута от PedestrianRouter
+    var routeGeometry by remember { mutableStateOf<List<Point>>(emptyList()) }
+    var isRoutingInProgress by remember { mutableStateOf(false) }
     val mapView = remember { MapView(context) }
+    val routerSession = remember { mutableStateOf<Session?>(null) }
+    val pedestrianRouter = remember { TransportFactory.getInstance().createPedestrianRouter() }
 
     DisposableEffect(Unit) {
         MapKitFactory.getInstance().onStart()
@@ -57,14 +71,39 @@ fun RouteMapPickerScreen(
         }
     }
 
-    // Map tap listener — adds a point on each tap
+    // Map tap listener
     DisposableEffect(Unit) {
         val listener = object : InputListener {
             override fun onMapTap(map: Map, point: Point) {
+                if (isRoutingInProgress) return
                 val newPoints = points + point
                 points = newPoints
-                distanceKm = totalDistanceKm(newPoints)
-                redrawMap(mapView, newPoints)
+                drawMarkers(mapView, newPoints)
+
+                if (newPoints.size >= 2) {
+                    isRoutingInProgress = true
+                    requestPedestrianRoute(
+                        pedestrianRouter = pedestrianRouter,
+                        points = newPoints,
+                        mapView = mapView,
+                        routerSession = routerSession,
+                        onResult = { geometry, distance ->
+                            routeGeometry = geometry
+                            distanceKm = distance
+                            isRoutingInProgress = false
+                        },
+                        onFallback = {
+                            // Фолбэк — прямые линии
+                            routeGeometry = newPoints
+                            distanceKm = totalDistanceKm(newPoints)
+                            drawFallbackPolyline(mapView, newPoints)
+                            isRoutingInProgress = false
+                        }
+                    )
+                } else {
+                    routeGeometry = emptyList()
+                    distanceKm = 0.0
+                }
             }
 
             override fun onMapLongTap(map: Map, point: Point) {}
@@ -76,7 +115,7 @@ fun RouteMapPickerScreen(
     }
 
     val pointCount = points.size
-    val canFinish = pointCount >= 2
+    val canFinish = pointCount >= 2 && !isRoutingInProgress
 
     val bannerText = when {
         pointCount == 0 -> stringResource(R.string.map_picker_hint_first)
@@ -99,17 +138,42 @@ fun RouteMapPickerScreen(
                     }
                 },
                 actions = {
-                    // Undo last point
                     IconButton(
                         onClick = {
-                            if (points.isNotEmpty()) {
+                            if (points.isNotEmpty() && !isRoutingInProgress) {
                                 val newPoints = points.dropLast(1)
                                 points = newPoints
-                                distanceKm = totalDistanceKm(newPoints)
-                                redrawMap(mapView, newPoints)
+                                routeGeometry = emptyList()
+
+                                if (newPoints.size >= 2) {
+                                    isRoutingInProgress = true
+                                    drawMarkers(mapView, newPoints)
+                                    requestPedestrianRoute(
+                                        pedestrianRouter = pedestrianRouter,
+                                        points = newPoints,
+                                        mapView = mapView,
+                                        routerSession = routerSession,
+                                        onResult = { geometry, distance ->
+                                            routeGeometry = geometry
+                                            distanceKm = distance
+                                            isRoutingInProgress = false
+                                        },
+                                        onFallback = {
+                                            routeGeometry = newPoints
+                                            distanceKm = totalDistanceKm(newPoints)
+                                            drawFallbackPolyline(mapView, newPoints)
+                                            isRoutingInProgress = false
+                                        }
+                                    )
+                                } else {
+                                    distanceKm = 0.0
+                                    val map = mapView.mapWindow.map
+                                    map.mapObjects.clear()
+                                    drawMarkers(mapView, newPoints)
+                                }
                             }
                         },
-                        enabled = points.isNotEmpty()
+                        enabled = points.isNotEmpty() && !isRoutingInProgress
                     ) {
                         Icon(Icons.Filled.Undo, stringResource(R.string.map_picker_undo))
                     }
@@ -119,7 +183,6 @@ fun RouteMapPickerScreen(
         bottomBar = {
             Surface(shadowElevation = 8.dp) {
                 Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                    // Distance info
                     if (canFinish) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
@@ -135,16 +198,22 @@ fun RouteMapPickerScreen(
                             }
                         }
                     }
+                    if (isRoutingInProgress) {
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        )
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedButton(
                             onClick = {
                                 points = emptyList()
                                 distanceKm = 0.0
+                                routeGeometry = emptyList()
                                 mapView.mapWindow.map.mapObjects.clear()
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
-                            enabled = points.isNotEmpty()
+                            enabled = points.isNotEmpty() && !isRoutingInProgress
                         ) {
                             Text(stringResource(R.string.clear))
                         }
@@ -152,11 +221,16 @@ fun RouteMapPickerScreen(
                             onClick = {
                                 val first = points.first()
                                 val last = points.last()
-                                val geometry = points.map { p -> listOf(p.longitude, p.latitude) }
+                                // Передаём реальную геометрию маршрута
+                                val geometryToSend = if (routeGeometry.size >= 2) {
+                                    routeGeometry.map { p -> listOf(p.longitude, p.latitude) }
+                                } else {
+                                    points.map { p -> listOf(p.longitude, p.latitude) }
+                                }
                                 onRouteSelected(
                                     first.latitude, first.longitude,
                                     last.latitude, last.longitude,
-                                    geometry, distanceKm
+                                    geometryToSend, distanceKm
                                 )
                             },
                             modifier = Modifier.weight(1f),
@@ -177,7 +251,6 @@ fun RouteMapPickerScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Banner hint
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -196,15 +269,69 @@ fun RouteMapPickerScreen(
     }
 }
 
-// ── Map drawing ──────────────────────────────────────────
+// ── Построение пешеходного маршрута ──────────────────────
 
-private fun redrawMap(mapView: MapView, points: List<Point>) {
+private fun requestPedestrianRoute(
+    pedestrianRouter: PedestrianRouter,
+    points: List<Point>,
+    mapView: MapView,
+    routerSession: MutableState<Session?>,
+    onResult: (geometry: List<Point>, distanceKm: Double) -> Unit,
+    onFallback: () -> Unit
+) {
+    val requestPoints = points.mapIndexed { idx, point ->
+        val type = if (idx == 0 || idx == points.lastIndex) RequestPointType.WAYPOINT
+                   else RequestPointType.VIAPOINT
+        RequestPoint(point, type, "", "")
+    }
+
+    routerSession.value = pedestrianRouter.requestRoutes(
+        requestPoints,
+        TimeOptions(),
+        RouteOptions(FitnessOptions()),
+        object : Session.RouteListener {
+            override fun onMasstransitRoutes(routes: MutableList<Route>) {
+                if (routes.isNotEmpty()) {
+                    val bestRoute = routes[0]
+                    val geometryPoints = bestRoute.geometry.points
+                    // Дистанция из метаданных маршрута
+                    val metadata = bestRoute.metadata
+                    val weight = metadata.weight
+                    val walkingDistance = weight.walkingDistance.value // в метрах
+                    val distKm = walkingDistance / 1000.0
+
+                    val map = mapView.mapWindow.map
+                    // Удаляем старую полилинию (маркеры перерисуем)
+                    map.mapObjects.clear()
+                    drawMarkers(mapView, points)
+                    // Рисуем реальный маршрут
+                    val polylineObj = map.mapObjects.addPolyline(Polyline(geometryPoints))
+                    polylineObj.apply {
+                        strokeWidth = 5f
+                        setStrokeColor(android.graphics.Color.parseColor("#2D6A4F"))
+                        outlineColor = android.graphics.Color.WHITE
+                        outlineWidth = 2f
+                    }
+
+                    onResult(geometryPoints, distKm)
+                } else {
+                    onFallback()
+                }
+            }
+
+            override fun onMasstransitRoutesError(error: Error) {
+                onFallback()
+            }
+        }
+    )
+}
+
+// ── Фолбэк — прямые линии ───────────────────────────────
+
+private fun drawFallbackPolyline(mapView: MapView, points: List<Point>) {
     val map = mapView.mapWindow.map
     map.mapObjects.clear()
-
-    if (points.isEmpty()) return
-
-    // Polyline
+    drawMarkers(mapView, points)
     if (points.size >= 2) {
         val polylineObj = map.mapObjects.addPolyline(Polyline(points))
         polylineObj.apply {
@@ -214,8 +341,11 @@ private fun redrawMap(mapView: MapView, points: List<Point>) {
             outlineWidth = 2f
         }
     }
+}
 
-    // Markers
+// ── Маркеры ──────────────────────────────────────────────
+
+private fun drawMarkers(mapView: MapView, points: List<Point>) {
     points.forEachIndexed { idx, point ->
         val isFirst = idx == 0
         val isLast = idx == points.lastIndex && points.size > 1
@@ -231,7 +361,7 @@ private fun redrawMap(mapView: MapView, points: List<Point>) {
                 android.graphics.Color.parseColor("#457B9D")
             )
         }
-        val placemark = map.mapObjects.addPlacemark(point)
+        val placemark = mapView.mapWindow.map.mapObjects.addPlacemark(point)
         placemark.setIcon(ImageProvider.fromBitmap(bitmap))
     }
 }
@@ -241,21 +371,17 @@ private fun createPickerMarkerBitmap(color: Int, size: Int, label: String): andr
     val canvas = android.graphics.Canvas(bitmap)
     val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
 
-    // Shadow
     paint.color = android.graphics.Color.parseColor("#33000000")
     canvas.drawCircle(size / 2f + 1, size / 2f + 1, size / 2f - 3, paint)
 
-    // Circle
     paint.color = color
     canvas.drawCircle(size / 2f, size / 2f, size / 2f - 3, paint)
 
-    // White border
     paint.style = android.graphics.Paint.Style.STROKE
     paint.color = android.graphics.Color.WHITE
     paint.strokeWidth = 3f
     canvas.drawCircle(size / 2f, size / 2f, size / 2f - 3, paint)
 
-    // Label
     paint.style = android.graphics.Paint.Style.FILL
     paint.color = android.graphics.Color.WHITE
     paint.textSize = 24f
@@ -272,11 +398,9 @@ private fun createSmallDotBitmap(color: Int): android.graphics.Bitmap {
     val canvas = android.graphics.Canvas(bitmap)
     val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
 
-    // Circle
     paint.color = color
     canvas.drawCircle(size / 2f, size / 2f, size / 2f - 2, paint)
 
-    // White border
     paint.style = android.graphics.Paint.Style.STROKE
     paint.color = android.graphics.Color.WHITE
     paint.strokeWidth = 2f
@@ -285,7 +409,7 @@ private fun createSmallDotBitmap(color: Int): android.graphics.Bitmap {
     return bitmap
 }
 
-// ── Haversine distance ───────────────────────────────────
+// ── Haversine distance (фолбэк) ─────────────────────────
 
 private fun haversineKm(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
     val r = 6371.0

@@ -45,10 +45,20 @@ import com.trail2.ai_route.RoutePoint
 import com.trail2.ui.theme.ForestGreen
 import com.trail2.ui.viewmodels.RouteResultViewModel
 import com.yandex.mapkit.MapKitFactory
+import com.yandex.mapkit.RequestPoint
+import com.yandex.mapkit.RequestPointType
+import com.yandex.mapkit.transport.masstransit.FitnessOptions
+import com.yandex.mapkit.transport.masstransit.RouteOptions
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.geometry.Polyline
 import com.yandex.mapkit.map.*
 import com.yandex.mapkit.mapview.MapView
+import com.yandex.mapkit.transport.TransportFactory
+import com.yandex.mapkit.transport.masstransit.PedestrianRouter
+import com.yandex.mapkit.transport.masstransit.Route
+import com.yandex.mapkit.transport.masstransit.Session
+import com.yandex.mapkit.transport.masstransit.TimeOptions
+import com.yandex.runtime.Error
 import com.yandex.runtime.image.ImageProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -90,7 +100,7 @@ fun RouteResultScreen(
                             append("\n${route.distanceKm} км · ${route.durationMin} мин · ${route.points.size} точек")
                             if (route.description.isNotBlank()) append("\n\n${route.description}")
                             if (route.tags.isNotEmpty()) append("\n\n${route.tags.joinToString(" ") { "#$it" }}")
-                            append("\n\n#TrailSocial")
+                            append("\n\n#Верста")
                         }
                         val sendIntent = Intent(Intent.ACTION_SEND).apply {
                             putExtra(Intent.EXTRA_TEXT, shareText)
@@ -166,8 +176,9 @@ fun RouteResultScreen(
 fun YandexMapView(route: GeneratedRoute, modifier: Modifier = Modifier) {
     val context = LocalContext.current
 
-    // Запоминаем MapView, чтобы не пересоздавать при рекомпозиции
     val mapView = remember { MapView(context) }
+    // Храним сессию роутера, чтобы она не была GC'd до завершения
+    val routerSession = remember { mutableStateOf<Session?>(null) }
 
     DisposableEffect(Unit) {
         MapKitFactory.getInstance().onStart()
@@ -182,53 +193,125 @@ fun YandexMapView(route: GeneratedRoute, modifier: Modifier = Modifier) {
         factory = { mapView },
         modifier = modifier,
         update = { mv ->
-            setupMap(mv, route, context)
+            setupMap(mv, route, context, routerSession)
         }
     )
 }
 
-private fun setupMap(mapView: MapView, route: GeneratedRoute, context: Context) {
+private fun setupMap(
+    mapView: MapView,
+    route: GeneratedRoute,
+    context: Context,
+    routerSession: MutableState<Session?>
+) {
     val map = mapView.mapWindow.map
     map.mapObjects.clear()
 
     if (route.points.isEmpty()) return
 
-    // Центрируем карту на середину маршрута
-    val midPoint = route.points[route.points.size / 2]
-    map.move(
-        com.yandex.mapkit.map.CameraPosition(
-            Point(midPoint.lat, midPoint.lon), 13f, 0f, 0f
-        )
-    )
+    val waypoints = route.points.map { Point(it.lat, it.lon) }
 
-    // ── Ломаная линия маршрута ─────────────────────────────
-    val polylinePoints = route.points.map { Point(it.lat, it.lon) }
-    val polylineObj = map.mapObjects.addPolyline(Polyline(polylinePoints))
+    // Центрируем карту, чтобы все точки были видны
+    fitMapToPoints(map, mapView, waypoints)
+
+    // Добавляем маркеры
+    addMarkers(map, route, context)
+
+    // Приоритет отрисовки маршрута:
+    // 1) geometry от бекенда (подробная линия вдоль дорог)
+    // 2) PedestrianRouter (запрос реального маршрута через MapKit)
+    // 3) Прямая полилиния (фолбэк)
+    val geometry = route.geometry
+    if (geometry != null && geometry.coordinates.size >= 2) {
+        // Бекенд вернул подробную геометрию — рисуем её
+        val polylinePoints = geometry.coordinates.map { coord ->
+            Point(coord[1], coord[0]) // GeoJSON: [lon, lat]
+        }
+        drawPolyline(map, polylinePoints)
+    } else if (waypoints.size >= 2) {
+        // Строим пешеходный маршрут через MapKit
+        requestPedestrianRoute(map, waypoints, routerSession)
+    }
+}
+
+private fun fitMapToPoints(map: com.yandex.mapkit.map.Map, mapView: MapView, points: List<Point>) {
+    if (points.size == 1) {
+        map.move(CameraPosition(points[0], 15f, 0f, 0f))
+        return
+    }
+    val polyline = Polyline(points)
+    val boundingBox = com.yandex.mapkit.geometry.BoundingBoxHelper.getBounds(polyline)
+    val geometry = com.yandex.mapkit.geometry.Geometry.fromBoundingBox(boundingBox)
+    var cameraPosition = map.cameraPosition(geometry)
+    cameraPosition = CameraPosition(
+        cameraPosition.target,
+        cameraPosition.zoom - 0.5f,
+        cameraPosition.azimuth,
+        cameraPosition.tilt
+    )
+    map.move(cameraPosition)
+}
+
+private fun drawPolyline(map: com.yandex.mapkit.map.Map, points: List<Point>) {
+    val polylineObj = map.mapObjects.addPolyline(Polyline(points))
     polylineObj.apply {
         strokeWidth = 5f
+        setStrokeColor(android.graphics.Color.parseColor("#2D6A4F"))
         outlineColor = android.graphics.Color.WHITE
         outlineWidth = 2f
     }
+}
 
-    // ── Маркеры точек ─────────────────────────────────────
+private fun requestPedestrianRoute(
+    map: com.yandex.mapkit.map.Map,
+    points: List<Point>,
+    routerSession: MutableState<Session?>
+) {
+    val pedestrianRouter: PedestrianRouter = TransportFactory.getInstance().createPedestrianRouter()
+
+    val requestPoints = points.mapIndexed { idx, point ->
+        val type = if (idx == 0 || idx == points.lastIndex) RequestPointType.WAYPOINT
+                   else RequestPointType.VIAPOINT
+        RequestPoint(point, type, "", "")
+    }
+
+    routerSession.value = pedestrianRouter.requestRoutes(
+        requestPoints,
+        TimeOptions(),
+        RouteOptions(FitnessOptions()),
+        object : Session.RouteListener {
+            override fun onMasstransitRoutes(routes: MutableList<Route>) {
+                if (routes.isNotEmpty()) {
+                    val bestRoute = routes[0]
+                    val geometry = bestRoute.geometry
+                    drawPolyline(map, geometry.points)
+                } else {
+                    // Фолбэк — прямые линии
+                    drawPolyline(map, points)
+                }
+            }
+
+            override fun onMasstransitRoutesError(error: Error) {
+                // Фолбэк — прямые линии
+                drawPolyline(map, points)
+            }
+        }
+    )
+}
+
+private fun addMarkers(map: com.yandex.mapkit.map.Map, route: GeneratedRoute, context: Context) {
     route.points.forEachIndexed { idx, point ->
         val mapPoint = Point(point.lat, point.lon)
-
-        // Цвет и размер маркера зависит от типа точки
         val markerColor = when (point.type) {
-            "start"   -> android.graphics.Color.parseColor("#52B788")   // зелёный
-            "finish"  -> android.graphics.Color.parseColor("#E63946")   // красный
-            else      -> android.graphics.Color.parseColor("#457B9D")   // синий
+            "start"  -> android.graphics.Color.parseColor("#52B788")
+            "finish" -> android.graphics.Color.parseColor("#E63946")
+            else     -> android.graphics.Color.parseColor("#457B9D")
         }
-
-        // Создаём bitmap-маркер программно
         val bitmap = createMarkerBitmap(context, point, idx + 1, markerColor)
         val placemark = map.mapObjects.addPlacemark(mapPoint)
         placemark.setIcon(ImageProvider.fromBitmap(bitmap))
-
-        // Тап по маркеру → показать подсказку (через Toast или кастомный попап)
         placemark.addTapListener { _, _ ->
-            android.widget.Toast.makeText(context, "📍 ${point.title}", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(context, point.title, android.widget.Toast.LENGTH_SHORT).show()
             true
         }
     }

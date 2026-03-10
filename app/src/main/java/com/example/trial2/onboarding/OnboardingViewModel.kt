@@ -43,7 +43,7 @@ class OnboardingViewModel @Inject constructor(
     val isOnboardingCompleted: StateFlow<Boolean?> = _isOnboardingCompleted.asStateFlow()
 
     val savedAnswers: StateFlow<OnboardingAnswers> = repo.savedAnswers
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OnboardingAnswers())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, OnboardingAnswers())
 
     init {
         viewModelScope.launch {

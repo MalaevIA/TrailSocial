@@ -1,6 +1,10 @@
 package com.trail2.ui.screens
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
@@ -20,6 +24,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.R
@@ -29,6 +35,15 @@ import com.trail2.ui.components.RouteMapView
 import com.trail2.ui.theme.ForestGreen
 import com.trail2.ui.theme.MossGreen
 import com.trail2.ui.viewmodels.RouteDetailViewModel
+import com.yandex.mapkit.MapKitFactory
+import com.yandex.mapkit.geometry.Point
+import com.yandex.mapkit.geometry.Polyline
+import com.yandex.mapkit.geometry.BoundingBox
+import com.yandex.mapkit.geometry.Geometry
+import com.yandex.mapkit.map.CameraPosition
+import com.yandex.mapkit.mapview.MapView
+import com.yandex.mapkit.user_location.UserLocationLayer
+import com.yandex.runtime.image.ImageProvider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +58,24 @@ fun RouteDetailScreen(
     LaunchedEffect(routeId) { vm.loadRoute(routeId) }
 
     val route = uiState.route
+
+    // Full-screen walking/navigation mode
+    if (uiState.isNavigating && route != null && route.geometry != null &&
+        route.startLat != null && route.startLng != null && route.endLat != null && route.endLng != null
+    ) {
+        RouteWalkingScreen(
+            geometry = route.geometry.coordinates,
+            startLat = route.startLat,
+            startLng = route.startLng,
+            endLat = route.endLat,
+            endLng = route.endLng,
+            routeTitle = route.title,
+            distanceKm = route.distanceKm,
+            onStop = { vm.stopNavigation() }
+        )
+        return
+    }
+
     val scrollState = rememberScrollState()
 
     if (uiState.isLoading && route == null) {
@@ -87,7 +120,7 @@ fun RouteDetailScreen(
                             append(route.title)
                             append("\n${route.region} · ${route.distanceKm} км")
                             if (route.description.isNotBlank()) append("\n\n${route.description}")
-                            append("\n\n#TrailSocial")
+                            append("\n\n#Верста")
                         }
                         val sendIntent = Intent(Intent.ACTION_SEND).apply {
                             putExtra(Intent.EXTRA_TEXT, shareText)
@@ -164,22 +197,59 @@ fun RouteDetailScreen(
             }
 
             // ── Route map ──
-            if (route.geometry != null && route.startLat != null && route.startLng != null && route.endLat != null && route.endLng != null) {
+            val hasGeometry = route.geometry != null && route.startLat != null &&
+                    route.startLng != null && route.endLat != null && route.endLng != null
+
+            if (hasGeometry) {
                 Spacer(Modifier.height(8.dp))
                 RouteMapView(
-                    geometry = route.geometry.coordinates,
-                    startLat = route.startLat,
-                    startLng = route.startLng,
-                    endLat = route.endLat,
-                    endLng = route.endLng,
+                    geometry = route.geometry!!.coordinates,
+                    startLat = route.startLat!!,
+                    startLng = route.startLng!!,
+                    endLat = route.endLat!!,
+                    endLng = route.endLng!!,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .height(200.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .height(360.dp)
                 )
-                Spacer(Modifier.height(8.dp))
+            } else {
+                // Заглушка карты — без геометрии
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .background(Color(0xFFE8F5E9)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Outlined.Map, null, modifier = Modifier.size(48.dp), tint = ForestGreen)
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            stringResource(R.string.route_no_map),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
             }
+
+            Spacer(Modifier.height(4.dp))
+            Button(
+                onClick = {
+                    if (hasGeometry) vm.startNavigation()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(12.dp),
+                enabled = hasGeometry,
+                colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+            ) {
+                Icon(Icons.Filled.Navigation, null, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.route_start_walking), fontWeight = FontWeight.SemiBold)
+            }
+            Spacer(Modifier.height(8.dp))
 
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(
@@ -359,4 +429,180 @@ fun formatDurationMinutes(minutes: Int): String {
         m == 0 -> "${h} ч"
         else -> "${h} ч ${m} мин"
     }
+}
+
+// ── Full-screen walking/navigation screen ──────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RouteWalkingScreen(
+    geometry: List<List<Double>>,
+    startLat: Double,
+    startLng: Double,
+    endLat: Double,
+    endLng: Double,
+    routeTitle: String,
+    distanceKm: Double,
+    onStop: () -> Unit
+) {
+    val context = LocalContext.current
+    val mapView = remember { MapView(context) }
+    var userLocationLayer by remember { mutableStateOf<UserLocationLayer?>(null) }
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasLocationPermission = granted
+    }
+
+    DisposableEffect(Unit) {
+        MapKitFactory.getInstance().onStart()
+        mapView.onStart()
+        onDispose {
+            mapView.onStop()
+            MapKitFactory.getInstance().onStop()
+        }
+    }
+
+    // Request location permission
+    LaunchedEffect(Unit) {
+        if (!hasLocationPermission) {
+            permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
+    // Enable user location layer when permission granted
+    LaunchedEffect(hasLocationPermission) {
+        if (hasLocationPermission) {
+            val layer = MapKitFactory.getInstance().createUserLocationLayer(mapView.mapWindow)
+            layer.isVisible = true
+            layer.isHeadingEnabled = true
+            userLocationLayer = layer
+        }
+    }
+
+    val polylinePoints = remember(geometry) {
+        if (geometry.size >= 2) {
+            geometry.map { coord -> Point(coord[1], coord[0]) }
+        } else {
+            listOf(Point(startLat, startLng), Point(endLat, endLng))
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.route_walking_title), fontSize = 16.sp) },
+                navigationIcon = {
+                    IconButton(onClick = onStop) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                    }
+                }
+            )
+        },
+        bottomBar = {
+            Surface(shadowElevation = 8.dp) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(routeTitle, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1)
+                    Spacer(Modifier.height(4.dp))
+                    Text("${"%.2f".format(distanceKm)} км", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(12.dp))
+                    Button(
+                        onClick = onStop,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE63946))
+                    ) {
+                        Icon(Icons.Filled.Stop, null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.route_stop_walking), fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
+    ) { padding ->
+        AndroidView(
+            factory = { mapView },
+            modifier = Modifier.fillMaxSize().padding(padding),
+            update = { mv ->
+                val map = mv.mapWindow.map
+                map.mapObjects.clear()
+
+                // Draw route polyline
+                if (polylinePoints.size >= 2) {
+                    val polylineObj = map.mapObjects.addPolyline(Polyline(polylinePoints))
+                    polylineObj.apply {
+                        strokeWidth = 6f
+                        setStrokeColor(android.graphics.Color.parseColor("#2D6A4F"))
+                        outlineColor = android.graphics.Color.WHITE
+                        outlineWidth = 2f
+                    }
+                }
+
+                // Start marker
+                val startBitmap = createWalkingMarkerBitmap(
+                    android.graphics.Color.parseColor("#52B788"), 64, "S"
+                )
+                val startPlacemark = map.mapObjects.addPlacemark(polylinePoints.first())
+                startPlacemark.setIcon(ImageProvider.fromBitmap(startBitmap))
+
+                // Finish marker
+                if (polylinePoints.size > 1) {
+                    val finishBitmap = createWalkingMarkerBitmap(
+                        android.graphics.Color.parseColor("#E63946"), 64, "F"
+                    )
+                    val finishPlacemark = map.mapObjects.addPlacemark(polylinePoints.last())
+                    finishPlacemark.setIcon(ImageProvider.fromBitmap(finishBitmap))
+                }
+
+                // Fit camera to route
+                val minLat = polylinePoints.minOf { it.latitude }
+                val maxLat = polylinePoints.maxOf { it.latitude }
+                val minLng = polylinePoints.minOf { it.longitude }
+                val maxLng = polylinePoints.maxOf { it.longitude }
+
+                if (minLat == maxLat && minLng == maxLng) {
+                    map.move(CameraPosition(Point(minLat, minLng), 15f, 0f, 0f))
+                } else {
+                    val boundingBox = BoundingBox(Point(minLat, minLng), Point(maxLat, maxLng))
+                    val cameraPosition = map.cameraPosition(Geometry.fromBoundingBox(boundingBox))
+                    map.move(CameraPosition(cameraPosition.target, cameraPosition.zoom - 0.3f, 0f, 0f))
+                }
+            }
+        )
+    }
+}
+
+private fun createWalkingMarkerBitmap(color: Int, size: Int, label: String): android.graphics.Bitmap {
+    val bitmap = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+
+    paint.color = android.graphics.Color.parseColor("#33000000")
+    canvas.drawCircle(size / 2f + 1, size / 2f + 1, size / 2f - 3, paint)
+
+    paint.color = color
+    canvas.drawCircle(size / 2f, size / 2f, size / 2f - 3, paint)
+
+    paint.style = android.graphics.Paint.Style.STROKE
+    paint.color = android.graphics.Color.WHITE
+    paint.strokeWidth = 3f
+    canvas.drawCircle(size / 2f, size / 2f, size / 2f - 3, paint)
+
+    paint.style = android.graphics.Paint.Style.FILL
+    paint.color = android.graphics.Color.WHITE
+    paint.textSize = 24f
+    paint.textAlign = android.graphics.Paint.Align.CENTER
+    val textY = size / 2f - (paint.descent() + paint.ascent()) / 2
+    canvas.drawText(label, size / 2f, textY, paint)
+
+    return bitmap
 }

@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.trail2.ui.theme.TrailSocialTheme
+import com.trail2.ui.theme.VerstaTheme
 import com.trail2.ui.viewmodels.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
@@ -57,7 +57,7 @@ class MainActivity : ComponentActivity() {
             }
 
             CompositionLocalProvider(LocalContext provides localizedContext) {
-                TrailSocialTheme(darkTheme = isDarkTheme) {
+                VerstaTheme(darkTheme = isDarkTheme) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background

@@ -18,6 +18,7 @@ import javax.inject.Inject
 
 data class ProfileUiState(
     val user: User? = null,
+    val myRoutes: List<TrailRoute> = emptyList(),
     val savedRoutes: List<TrailRoute> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null
@@ -49,9 +50,22 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             when (val result = userRepository.getMe()) {
-                is ApiResult.Success -> _uiState.update { it.copy(user = result.data, isLoading = false) }
+                is ApiResult.Success -> {
+                    _uiState.update { it.copy(user = result.data, isLoading = false) }
+                    loadMyRoutes(result.data.id)
+                    loadSavedRoutes()
+                }
                 is ApiResult.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
                 is ApiResult.NetworkError -> _uiState.update { it.copy(isLoading = false, error = "Нет подключения") }
+            }
+        }
+    }
+
+    private fun loadMyRoutes(userId: String) {
+        viewModelScope.launch {
+            when (val result = userRepository.getUserRoutes(userId)) {
+                is ApiResult.Success -> _uiState.update { it.copy(myRoutes = result.data.items) }
+                else -> {}
             }
         }
     }

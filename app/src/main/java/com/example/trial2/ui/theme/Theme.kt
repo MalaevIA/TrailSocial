@@ -52,7 +52,7 @@ val TrailDarkColorScheme = darkColorScheme(
 val TrailColorScheme = TrailLightColorScheme
 
 @Composable
-fun TrailSocialTheme(
+fun VerstaTheme(
     darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {

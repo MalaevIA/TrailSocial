@@ -81,22 +81,21 @@ private fun setupRouteMap(
         }
     }
 
-    // Markers for each point
-    polylinePoints.forEachIndexed { idx, point ->
-        val isFirst = idx == 0
-        val isLast = idx == polylinePoints.lastIndex && polylinePoints.size > 1
+    // Only Start and Finish markers (no intermediate dots)
+    if (polylinePoints.isNotEmpty()) {
+        val startBitmap = createCircleMarkerBitmap(
+            android.graphics.Color.parseColor("#52B788"), 64, "S"
+        )
+        val startPlacemark = map.mapObjects.addPlacemark(polylinePoints.first())
+        startPlacemark.setIcon(ImageProvider.fromBitmap(startBitmap))
 
-        val bitmap = when {
-            isFirst -> createCircleMarkerBitmap(
-                android.graphics.Color.parseColor("#52B788"), 64, "S"
-            )
-            isLast -> createCircleMarkerBitmap(
+        if (polylinePoints.size > 1) {
+            val finishBitmap = createCircleMarkerBitmap(
                 android.graphics.Color.parseColor("#E63946"), 64, "F"
             )
-            else -> createSmallDotBitmap(android.graphics.Color.parseColor("#457B9D"))
+            val finishPlacemark = map.mapObjects.addPlacemark(polylinePoints.last())
+            finishPlacemark.setIcon(ImageProvider.fromBitmap(finishBitmap))
         }
-        val placemark = map.mapObjects.addPlacemark(point)
-        placemark.setIcon(ImageProvider.fromBitmap(bitmap))
     }
 
     // Camera auto-fit to bounds

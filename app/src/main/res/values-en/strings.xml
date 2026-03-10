@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">TrailSocial</string>
+    <string name="app_name">Верста</string>
 
     <!-- Bottom navigation tabs -->
     <string name="tab_feed">Feed</string>
@@ -36,7 +36,7 @@
     <string name="time_hours_minutes">%d h %d min</string>
 
     <!-- Feed screen -->
-    <string name="feed_title">TrailSocial</string>
+    <string name="feed_title">Верста</string>
     <string name="feed_subtitle">Routes near you</string>
     <string name="feed_create_route">Create route</string>
     <string name="feed_search">Search</string>
@@ -110,6 +110,10 @@
     <string name="profile_logout_confirm">Log out?</string>
     <string name="profile_logout_message">You will be redirected to the login screen.</string>
     <string name="profile_logout_action">Log out</string>
+    <string name="profile_tab_routes">Routes</string>
+    <string name="profile_tab_saved">Saved</string>
+    <string name="profile_no_routes">No routes yet</string>
+    <string name="profile_no_saved">No saved routes</string>
 
     <!-- Route Detail screen -->
     <string name="route_not_found">Route not found</string>
@@ -117,6 +121,10 @@
     <string name="route_add_comment">Add a comment…</string>
     <string name="route_subscribe">Follow</string>
     <string name="route_unsubscribe">Unfollow</string>
+    <string name="route_start_walking">Start walking</string>
+    <string name="route_stop_walking">Finish</string>
+    <string name="route_walking_title">Route navigation</string>
+    <string name="route_no_map">Route map not available</string>
     <string name="route_comments_likes">%1$d comments · %2$d likes</string>
     <string name="route_characteristics">Route characteristics</string>
     <string name="route_description">Description</string>
@@ -185,7 +193,7 @@
     <string name="map_picker_points">Points</string>
 
     <!-- Login screen -->
-    <string name="login_title">TrailSocial</string>
+    <string name="login_title">Верста</string>
     <string name="login_subtitle">Sign in to your account</string>
     <string name="login_email">Email</string>
     <string name="login_password">Password</string>
@@ -194,7 +202,7 @@
     <string name="login_show_password">Show password</string>
 
     <!-- Onboarding: Welcome -->
-    <string name="welcome_title">TrailSocial</string>
+    <string name="welcome_title">Верста</string>
     <string name="welcome_description">Discover hiking routes,\nshare your experiences,\nfind like-minded people.</string>
     <string name="welcome_feature1">Route feed from fellow hikers</string>
     <string name="welcome_feature2">Routes in your city and region</string>
@@ -207,6 +215,8 @@
     <string name="city_title">Where do you want to walk?</string>
     <string name="city_subtitle">Choose one or more cities — we\'ll find routes nearby</string>
     <string name="city_selected">Selected: %1$d %2$s</string>
+    <string name="city_search_hint">Search city…</string>
+    <string name="city_no_results">No results found</string>
 
     <!-- Onboarding: Fitness -->
     <string name="fitness_title">Fitness level</string>

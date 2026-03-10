@@ -38,6 +38,11 @@ fun FeedScreen(
     feedVm: FeedViewModel = hiltViewModel(),
     notifVm: NotificationViewModel = hiltViewModel()
 ) {
+    // Перезагружаем при каждом заходе на экран
+    LaunchedEffect(Unit) {
+        feedVm.loadRoutes()
+    }
+
     val uiState by feedVm.uiState.collectAsStateWithLifecycle()
     val notifState by notifVm.uiState.collectAsStateWithLifecycle()
 
