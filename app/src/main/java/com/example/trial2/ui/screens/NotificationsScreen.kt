@@ -76,6 +76,7 @@ fun NotificationsScreen(
                                 NotificationType.NEW_FOLLOWER -> onUserClick(notification.actor.id)
                                 NotificationType.ROUTE_LIKE -> notification.routeId?.let(onRouteClick)
                                 NotificationType.NEW_COMMENT -> notification.routeId?.let(onRouteClick)
+                                NotificationType.NEW_ROUTE -> notification.routeId?.let(onRouteClick)
                             }
                         }
                     )
@@ -124,6 +125,7 @@ private fun NotificationItem(
                     NotificationType.NEW_FOLLOWER -> stringResource(R.string.notification_new_follower, notification.actor.name)
                     NotificationType.ROUTE_LIKE -> stringResource(R.string.notification_route_like, notification.actor.name, notification.routeTitle ?: "")
                     NotificationType.NEW_COMMENT -> stringResource(R.string.notification_new_comment, notification.actor.name, notification.commentText ?: "")
+                    NotificationType.NEW_ROUTE -> stringResource(R.string.notification_new_route, notification.actor.name, notification.routeTitle ?: "")
                 }
                 Text(
                     text = text,

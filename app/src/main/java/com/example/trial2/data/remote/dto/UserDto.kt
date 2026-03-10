@@ -13,7 +13,9 @@ data class UserPublicDto(
     @SerialName("followers_count") val followersCount: Int = 0,
     @SerialName("following_count") val followingCount: Int = 0,
     @SerialName("routes_count") val routesCount: Int = 0,
-    @SerialName("created_at") val createdAt: String = ""
+    @SerialName("created_at") val createdAt: String = "",
+    @SerialName("is_admin") val isAdmin: Boolean = false,
+    @SerialName("is_active") val isActive: Boolean = true
 )
 
 @Serializable
@@ -27,7 +29,9 @@ data class UserProfileDto(
     @SerialName("following_count") val followingCount: Int = 0,
     @SerialName("routes_count") val routesCount: Int = 0,
     @SerialName("created_at") val createdAt: String = "",
-    @SerialName("is_following") val isFollowing: Boolean = false
+    @SerialName("is_following") val isFollowing: Boolean = false,
+    @SerialName("is_admin") val isAdmin: Boolean = false,
+    @SerialName("is_active") val isActive: Boolean = true
 )
 
 @Serializable

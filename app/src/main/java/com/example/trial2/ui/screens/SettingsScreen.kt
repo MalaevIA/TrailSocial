@@ -26,6 +26,8 @@ import com.trail2.ui.viewmodels.SettingsViewModel
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    isAdmin: Boolean = false,
+    onAdminPanelClick: () -> Unit = {},
     vm: SettingsViewModel = hiltViewModel()
 ) {
     val isDarkTheme by vm.isDarkTheme.collectAsStateWithLifecycle()
@@ -157,6 +159,40 @@ fun SettingsScreen(
                     Column {
                         Text("Верста", fontSize = 15.sp, fontWeight = FontWeight.Medium)
                         Text(stringResource(R.string.settings_version), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+
+            // ── Admin section (only for admins) ──
+            if (isAdmin) {
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                SettingsSectionHeader(stringResource(R.string.settings_admin))
+
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onAdminPanelClick),
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Outlined.AdminPanelSettings,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Text(
+                            stringResource(R.string.admin_title),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }

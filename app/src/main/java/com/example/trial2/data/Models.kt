@@ -10,7 +10,9 @@ data class User(
     val followingCount: Int = 0,
     val routesCount: Int = 0,
     val isFollowing: Boolean = false,
-    val createdAt: String = ""
+    val createdAt: String = "",
+    val isAdmin: Boolean = false,
+    val isActive: Boolean = true
 )
 
 enum class Difficulty { EASY, MODERATE, HARD, EXPERT }
@@ -79,7 +81,7 @@ data class Notification(
 )
 
 enum class NotificationType {
-    NEW_FOLLOWER, ROUTE_LIKE, NEW_COMMENT
+    NEW_FOLLOWER, ROUTE_LIKE, NEW_COMMENT, NEW_ROUTE
 }
 
 data class PaginatedResponse<T>(
@@ -88,4 +90,20 @@ data class PaginatedResponse<T>(
     val page: Int,
     val pageSize: Int,
     val pages: Int
+)
+
+// Reports
+enum class ReportReason { SPAM, HARASSMENT, INAPPROPRIATE, MISINFORMATION, OTHER }
+enum class ReportStatus { PENDING, REVIEWED, DISMISSED }
+enum class TargetType { ROUTE, COMMENT, USER }
+
+data class Report(
+    val id: String,
+    val reporterId: String,
+    val targetType: TargetType,
+    val targetId: String,
+    val reason: ReportReason,
+    val description: String? = null,
+    val status: ReportStatus = ReportStatus.PENDING,
+    val createdAt: String = ""
 )

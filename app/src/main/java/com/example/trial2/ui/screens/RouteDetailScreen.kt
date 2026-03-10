@@ -32,6 +32,7 @@ import com.trail2.R
 import com.trail2.data.Difficulty
 import com.trail2.data.RouteStatus
 import com.trail2.ui.components.*
+import com.trail2.ui.components.ReportDialog
 import com.trail2.ui.components.RouteMapView
 import com.trail2.ui.theme.ForestGreen
 import com.trail2.ui.theme.MossGreen
@@ -58,6 +59,27 @@ fun RouteDetailScreen(
 ) {
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
+    var showAdminDeleteDialog by remember { mutableStateOf(false) }
+    var reportingCommentId by remember { mutableStateOf<String?>(null) }
+    var adminDeletingCommentId by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val reportSentText = stringResource(R.string.report_sent)
+    val reportAlreadySentText = stringResource(R.string.report_already_sent)
+
+    LaunchedEffect(uiState.reportSent) {
+        if (uiState.reportSent) {
+            snackbarHostState.showSnackbar(reportSentText)
+            vm.clearReportState()
+        }
+    }
+
+    LaunchedEffect(uiState.reportError) {
+        if (uiState.reportError == "already_sent") {
+            snackbarHostState.showSnackbar(reportAlreadySentText)
+            vm.clearReportState()
+        }
+    }
 
     LaunchedEffect(routeId) { vm.loadRoute(routeId) }
 
@@ -107,6 +129,7 @@ fun RouteDetailScreen(
     val context = LocalContext.current
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(route.title, maxLines = 1, fontSize = 16.sp) },
@@ -122,6 +145,11 @@ fun RouteDetailScreen(
                             contentDescription = stringResource(R.string.save),
                             tint = if (route.isSaved) ForestGreen else MaterialTheme.colorScheme.onSurface
                         )
+                    }
+                    if (!uiState.isOwnRoute) {
+                        IconButton(onClick = { showReportDialog = true }) {
+                            Icon(Icons.Outlined.Flag, contentDescription = stringResource(R.string.report_title))
+                        }
                     }
                     IconButton(onClick = {
                         val shareText = buildString {
@@ -431,6 +459,21 @@ fun RouteDetailScreen(
                     }
                 }
 
+                // Admin: delete any route
+                if (uiState.isAdmin && !uiState.isOwnRoute) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { showAdminDeleteDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Outlined.Delete, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.admin_delete_admin))
+                    }
+                }
+
                 Spacer(Modifier.height(20.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(16.dp))
@@ -442,7 +485,12 @@ fun RouteDetailScreen(
                     Text("Пока нет комментариев", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 } else {
                     uiState.comments.forEach { comment ->
-                        CommentItem(comment)
+                        CommentItem(
+                            comment = comment,
+                            isAdmin = uiState.isAdmin,
+                            onReport = { reportingCommentId = comment.id },
+                            onAdminDelete = { adminDeletingCommentId = comment.id }
+                        )
                         Spacer(Modifier.height(12.dp))
                     }
                 }
@@ -473,6 +521,73 @@ fun RouteDetailScreen(
             }
         )
     }
+
+    // Admin delete route dialog
+    if (showAdminDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showAdminDeleteDialog = false },
+            title = { Text(stringResource(R.string.admin_delete_content_confirm)) },
+            text = { Text(stringResource(R.string.admin_delete_content_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.adminDeleteRoute()
+                    showAdminDeleteDialog = false
+                    onBack()
+                }) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAdminDeleteDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Admin delete comment dialog
+    adminDeletingCommentId?.let { commentId ->
+        AlertDialog(
+            onDismissRequest = { adminDeletingCommentId = null },
+            title = { Text(stringResource(R.string.admin_delete_content_confirm)) },
+            text = { Text(stringResource(R.string.admin_delete_content_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.adminDeleteComment(commentId)
+                    adminDeletingCommentId = null
+                }) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { adminDeletingCommentId = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Report route dialog
+    if (showReportDialog) {
+        ReportDialog(
+            onDismiss = { showReportDialog = false },
+            onSubmit = { data ->
+                vm.reportRoute(data.reason, data.description)
+                showReportDialog = false
+            }
+        )
+    }
+
+    // Report comment dialog
+    reportingCommentId?.let { commentId ->
+        ReportDialog(
+            onDismiss = { reportingCommentId = null },
+            onSubmit = { data ->
+                vm.reportComment(commentId, data.reason, data.description)
+                reportingCommentId = null
+            }
+        )
+    }
 }
 
 @Composable
@@ -488,7 +603,12 @@ fun DetailStatCard(emoji: String, label: String, value: String, modifier: Modifi
 }
 
 @Composable
-fun CommentItem(comment: com.trail2.data.Comment) {
+fun CommentItem(
+    comment: com.trail2.data.Comment,
+    isAdmin: Boolean = false,
+    onReport: () -> Unit = {},
+    onAdminDelete: () -> Unit = {}
+) {
     Row(modifier = Modifier.fillMaxWidth()) {
         UserAvatar(colorHex = comment.author.avatarUrl, name = comment.author.name, size = 36)
         Spacer(Modifier.width(10.dp))
@@ -510,6 +630,22 @@ fun CommentItem(comment: com.trail2.data.Comment) {
                 )
                 Spacer(Modifier.width(3.dp))
                 Text("${comment.likesCount}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.width(12.dp))
+                Icon(
+                    Icons.Outlined.Flag,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp).clickable(onClick = onReport),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (isAdmin) {
+                    Spacer(Modifier.width(12.dp))
+                    Icon(
+                        Icons.Outlined.Delete,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp).clickable(onClick = onAdminDelete),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         }
     }

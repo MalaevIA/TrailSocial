@@ -34,6 +34,7 @@ sealed class Screen {
     data class FollowList(val userId: String, val type: FollowListType) : Screen()
     object RouteMapPicker : Screen()
     object Settings : Screen()
+    object AdminPanel : Screen()
 }
 
 enum class FollowListType { FOLLOWERS, FOLLOWING }
@@ -249,7 +250,21 @@ fun MainAppContent() {
             return
         }
         is Screen.Settings -> {
-            SettingsScreen(onBack = navigateBack)
+            val profileVm: com.trail2.ui.viewmodels.ProfileViewModel = hiltViewModel()
+            val profileState by profileVm.uiState.collectAsStateWithLifecycle()
+            SettingsScreen(
+                onBack = navigateBack,
+                isAdmin = profileState.user?.isAdmin == true,
+                onAdminPanelClick = { currentScreen = Screen.AdminPanel }
+            )
+            return
+        }
+        is Screen.AdminPanel -> {
+            AdminPanelScreen(
+                onBack = navigateBack,
+                onUserClick = { userId -> currentScreen = Screen.UserProfile(userId) },
+                onRouteClick = { routeId -> currentScreen = Screen.RouteDetail(routeId) }
+            )
             return
         }
         is Screen.Login -> {

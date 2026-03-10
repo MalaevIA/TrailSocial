@@ -179,6 +179,7 @@
     <string name="notification_new_follower">%s followed you</string>
     <string name="notification_route_like">%1$s liked route \"%2$s\"</string>
     <string name="notification_new_comment">%1$s: %2$s</string>
+    <string name="notification_new_route">%1$s published route \"%2$s\"</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
@@ -265,4 +266,52 @@
     <string name="setup_preferences">Your preferences</string>
     <string name="setup_cities_selected">%d city(ies) selected</string>
     <string name="setup_interests_selected">%d interest(s) selected</string>
+
+    <!-- Admin panel -->
+    <string name="admin_title">Admin Panel</string>
+    <string name="admin_users">Users</string>
+    <string name="admin_reports">Reports</string>
+    <string name="admin_search_users">Search by name or username…</string>
+    <string name="admin_search">Search</string>
+    <string name="admin_filter_all">All</string>
+    <string name="admin_filter_active">Active</string>
+    <string name="admin_filter_banned">Banned</string>
+    <string name="admin_no_users">No users found</string>
+    <string name="admin_no_reports">No reports</string>
+    <string name="admin_banned_badge">BAN</string>
+    <string name="admin_admin_badge">ADMIN</string>
+    <string name="admin_ban_confirm">Ban user?</string>
+    <string name="admin_ban_message">User %s will be banned and unable to use the app.</string>
+    <string name="admin_ban_action">Ban</string>
+    <string name="admin_unban_confirm">Unban user?</string>
+    <string name="admin_unban_message">User %s will be unbanned.</string>
+    <string name="admin_unban_action">Unban</string>
+    <string name="admin_load_more">Load more</string>
+    <string name="admin_report_pending">Pending</string>
+    <string name="admin_report_reviewed">Reviewed</string>
+    <string name="admin_report_dismissed">Dismissed</string>
+    <string name="admin_target_route">Route</string>
+    <string name="admin_target_comment">Comment</string>
+    <string name="admin_target_user">User</string>
+    <string name="admin_action_reviewed">Reviewed</string>
+    <string name="admin_action_dismiss">Dismiss</string>
+    <string name="admin_delete_content">Delete content</string>
+    <string name="admin_delete_content_confirm">Delete content?</string>
+    <string name="admin_delete_content_message">Content will be permanently deleted.</string>
+    <string name="admin_delete_admin">Delete (admin)</string>
+    <string name="admin_delete_comment_admin">Delete comment (admin)</string>
+    <string name="settings_admin">Admin Panel</string>
+
+    <!-- Report dialog -->
+    <string name="report_title">Report</string>
+    <string name="report_select_reason">Select a reason</string>
+    <string name="report_reason_spam">Spam</string>
+    <string name="report_reason_harassment">Harassment</string>
+    <string name="report_reason_inappropriate">Inappropriate content</string>
+    <string name="report_reason_misinformation">Misinformation</string>
+    <string name="report_reason_other">Other</string>
+    <string name="report_description">Description (optional)</string>
+    <string name="report_description_hint">Describe the issue in more detail…</string>
+    <string name="report_sent">Report sent</string>
+    <string name="report_already_sent">You have already reported this content</string>
 </resources>

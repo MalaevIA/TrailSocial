@@ -9,7 +9,9 @@ import com.trail2.data.remote.ApiResult
 import com.trail2.data.remote.dto.GeoJsonLineStringDto
 import com.trail2.data.remote.dto.RouteUpdateDto
 import com.trail2.data.remote.dto.WaypointDto
+import com.trail2.data.repository.AdminRepository
 import com.trail2.data.repository.CommentRepository
+import com.trail2.data.repository.ReportRepository
 import com.trail2.data.repository.RouteRepository
 import com.trail2.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,7 +32,10 @@ data class RouteDetailUiState(
     val isNavigating: Boolean = false,
     val clonedRouteId: String? = null,
     val isCloning: Boolean = false,
-    val currentUserId: String? = null
+    val currentUserId: String? = null,
+    val isAdmin: Boolean = false,
+    val reportSent: Boolean = false,
+    val reportError: String? = null
 ) {
     val isOwnRoute: Boolean
         get() = currentUserId != null && route?.author?.id == currentUserId
@@ -40,7 +45,9 @@ data class RouteDetailUiState(
 class RouteDetailViewModel @Inject constructor(
     private val routeRepository: RouteRepository,
     private val commentRepository: CommentRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val reportRepository: ReportRepository,
+    private val adminRepository: AdminRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RouteDetailUiState())
@@ -49,7 +56,9 @@ class RouteDetailViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             when (val result = userRepository.getMe()) {
-                is ApiResult.Success -> _uiState.update { it.copy(currentUserId = result.data.id) }
+                is ApiResult.Success -> _uiState.update {
+                    it.copy(currentUserId = result.data.id, isAdmin = result.data.isAdmin)
+                }
                 else -> {}
             }
         }
@@ -219,6 +228,61 @@ class RouteDetailViewModel @Inject constructor(
                         author = current.author.copy(isFollowing = !current.author.isFollowing)
                     ))
                 }
+            }
+        }
+    }
+
+    fun reportRoute(reason: String, description: String?) {
+        val routeId = _uiState.value.route?.id ?: return
+        viewModelScope.launch {
+            when (val result = reportRepository.createReport("route", routeId, reason, description)) {
+                is ApiResult.Success -> _uiState.update { it.copy(reportSent = true, reportError = null) }
+                is ApiResult.Error -> {
+                    if (result.code == 409) {
+                        _uiState.update { it.copy(reportError = "already_sent") }
+                    } else {
+                        _uiState.update { it.copy(reportError = result.message) }
+                    }
+                }
+                is ApiResult.NetworkError -> _uiState.update { it.copy(reportError = "network") }
+            }
+        }
+    }
+
+    fun reportComment(commentId: String, reason: String, description: String?) {
+        viewModelScope.launch {
+            when (val result = reportRepository.createReport("comment", commentId, reason, description)) {
+                is ApiResult.Success -> _uiState.update { it.copy(reportSent = true, reportError = null) }
+                is ApiResult.Error -> {
+                    if (result.code == 409) {
+                        _uiState.update { it.copy(reportError = "already_sent") }
+                    }
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun clearReportState() {
+        _uiState.update { it.copy(reportSent = false, reportError = null) }
+    }
+
+    fun adminDeleteRoute() {
+        val routeId = _uiState.value.route?.id ?: return
+        viewModelScope.launch {
+            adminRepository.deleteRoute(routeId)
+        }
+    }
+
+    fun adminDeleteComment(commentId: String) {
+        viewModelScope.launch {
+            when (adminRepository.deleteComment(commentId)) {
+                is ApiResult.Success -> {
+                    _uiState.update { state ->
+                        state.copy(comments = state.comments.filter { it.id != commentId })
+                    }
+                }
+                else -> {}
             }
         }
     }

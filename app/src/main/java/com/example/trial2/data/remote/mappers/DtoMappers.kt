@@ -15,7 +15,9 @@ fun UserPublicDto.toDomain() = User(
     followingCount = followingCount,
     routesCount = routesCount,
     isFollowing = false,
-    createdAt = createdAt
+    createdAt = createdAt,
+    isAdmin = isAdmin,
+    isActive = isActive
 )
 
 fun UserProfileDto.toDomain() = User(
@@ -28,7 +30,9 @@ fun UserProfileDto.toDomain() = User(
     followingCount = followingCount,
     routesCount = routesCount,
     isFollowing = isFollowing,
-    createdAt = createdAt
+    createdAt = createdAt,
+    isAdmin = isAdmin,
+    isActive = isActive
 )
 
 fun RouteResponseDto.toDomain() = TrailRoute(
@@ -140,9 +144,44 @@ private fun parseRouteStatus(value: String): RouteStatus = when (value.lowercase
     else -> RouteStatus.PUBLISHED
 }
 
+fun ReportResponseDto.toDomain() = Report(
+    id = id,
+    reporterId = reporterId,
+    targetType = parseTargetType(targetType),
+    targetId = targetId,
+    reason = parseReportReason(reason),
+    description = description,
+    status = parseReportStatus(status),
+    createdAt = createdAt
+)
+
+private fun parseTargetType(value: String): TargetType = when (value) {
+    "route" -> TargetType.ROUTE
+    "comment" -> TargetType.COMMENT
+    "user" -> TargetType.USER
+    else -> TargetType.ROUTE
+}
+
+private fun parseReportReason(value: String): ReportReason = when (value) {
+    "spam" -> ReportReason.SPAM
+    "harassment" -> ReportReason.HARASSMENT
+    "inappropriate" -> ReportReason.INAPPROPRIATE
+    "misinformation" -> ReportReason.MISINFORMATION
+    "other" -> ReportReason.OTHER
+    else -> ReportReason.OTHER
+}
+
+private fun parseReportStatus(value: String): ReportStatus = when (value) {
+    "pending" -> ReportStatus.PENDING
+    "reviewed" -> ReportStatus.REVIEWED
+    "dismissed" -> ReportStatus.DISMISSED
+    else -> ReportStatus.PENDING
+}
+
 private fun parseNotificationType(value: String): NotificationType = when (value) {
     "new_follower" -> NotificationType.NEW_FOLLOWER
     "route_like" -> NotificationType.ROUTE_LIKE
     "new_comment" -> NotificationType.NEW_COMMENT
+    "new_route" -> NotificationType.NEW_ROUTE
     else -> NotificationType.NEW_FOLLOWER
 }

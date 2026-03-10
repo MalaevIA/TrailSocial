@@ -179,6 +179,7 @@
     <string name="notification_new_follower">%s подписался на вас</string>
     <string name="notification_route_like">%1$s оценил маршрут \"%2$s\"</string>
     <string name="notification_new_comment">%1$s: %2$s</string>
+    <string name="notification_new_route">%1$s опубликовал(а) маршрут \"%2$s\"</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Настройки</string>
@@ -265,4 +266,52 @@
     <string name="setup_preferences">Ваши предпочтения</string>
     <string name="setup_cities_selected">%d город(а) выбрано</string>
     <string name="setup_interests_selected">%d интереса выбрано</string>
+
+    <!-- Admin panel -->
+    <string name="admin_title">Админ-панель</string>
+    <string name="admin_users">Пользователи</string>
+    <string name="admin_reports">Жалобы</string>
+    <string name="admin_search_users">Поиск по имени или username…</string>
+    <string name="admin_search">Найти</string>
+    <string name="admin_filter_all">Все</string>
+    <string name="admin_filter_active">Активные</string>
+    <string name="admin_filter_banned">Заблокированные</string>
+    <string name="admin_no_users">Пользователи не найдены</string>
+    <string name="admin_no_reports">Нет жалоб</string>
+    <string name="admin_banned_badge">БАН</string>
+    <string name="admin_admin_badge">АДМИН</string>
+    <string name="admin_ban_confirm">Заблокировать пользователя?</string>
+    <string name="admin_ban_message">Пользователь %s будет заблокирован и не сможет пользоваться приложением.</string>
+    <string name="admin_ban_action">Заблокировать</string>
+    <string name="admin_unban_confirm">Разблокировать пользователя?</string>
+    <string name="admin_unban_message">Пользователь %s будет разблокирован.</string>
+    <string name="admin_unban_action">Разблокировать</string>
+    <string name="admin_load_more">Загрузить ещё</string>
+    <string name="admin_report_pending">Ожидают</string>
+    <string name="admin_report_reviewed">Рассмотрены</string>
+    <string name="admin_report_dismissed">Отклонены</string>
+    <string name="admin_target_route">Маршрут</string>
+    <string name="admin_target_comment">Комментарий</string>
+    <string name="admin_target_user">Пользователь</string>
+    <string name="admin_action_reviewed">Рассмотрено</string>
+    <string name="admin_action_dismiss">Отклонить</string>
+    <string name="admin_delete_content">Удалить контент</string>
+    <string name="admin_delete_content_confirm">Удалить контент?</string>
+    <string name="admin_delete_content_message">Контент будет удалён без возможности восстановления.</string>
+    <string name="admin_delete_admin">Удалить (админ)</string>
+    <string name="admin_delete_comment_admin">Удалить комментарий (админ)</string>
+    <string name="settings_admin">Админ-панель</string>
+
+    <!-- Report dialog -->
+    <string name="report_title">Пожаловаться</string>
+    <string name="report_select_reason">Выберите причину жалобы</string>
+    <string name="report_reason_spam">Спам</string>
+    <string name="report_reason_harassment">Оскорбления</string>
+    <string name="report_reason_inappropriate">Неприемлемый контент</string>
+    <string name="report_reason_misinformation">Дезинформация</string>
+    <string name="report_reason_other">Другое</string>
+    <string name="report_description">Описание (необязательно)</string>
+    <string name="report_description_hint">Опишите проблему подробнее…</string>
+    <string name="report_sent">Жалоба отправлена</string>
+    <string name="report_already_sent">Вы уже жаловались на этот контент</string>
 </resources>
