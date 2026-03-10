@@ -55,15 +55,17 @@ JWT-based auth with encrypted token storage:
 All data flows through Retrofit. Room was removed — there is no local database.
 
 **DI modules** (`com.trail2.di`):
-- `NetworkModule` — OkHttp (30s connect, 120s read, 60s write), Retrofit, all 7 API interfaces
+- `NetworkModule` — OkHttp (30s connect, 120s read, 60s write), Retrofit, all API interfaces
 - `AuthModule` — `TokenManager`
 - `DataStoreModule` — `DataStore<Preferences>` for onboarding/settings
 
-**7 API interfaces** in `data/remote/api/`: `AuthApi`, `RouteApi`, `UserApi`, `CommentApi`, `NotificationApi`, `AiRouteApi`, `UploadApi`, `ReportApi`
+**API interfaces** in `data/remote/api/`: `AuthApi`, `RouteApi`, `UserApi`, `CommentApi`, `NotificationApi`, `AiRouteApi`, `UploadApi`, `ReportApi`
 
 **Error handling**: `ApiResult<T>` sealed class (`Success`/`Error`/`NetworkError`) + `safeApiCall()` wrapper that parses error JSON `detail` field.
 
 **DTO ↔ Domain mapping** in `data/remote/mappers/DtoMappers.kt`. Domain models in `data/Models.kt`.
+
+**Coordinate convention**: GeoJSON uses `[lng, lat]`, Yandex MapKit `Point(lat, lng)`. Conversions are explicit throughout.
 
 ### AI Route Builder
 Async generation with polling:
@@ -73,15 +75,48 @@ Async generation with polling:
    - `POST ai/generate-route` → receives `task_id`
    - Polls `GET ai/tasks/{taskId}` every 2 seconds (timeout: 5 minutes)
    - `status: "completed"` → returns `GeneratedRoute`, `"failed"` → returns error
-4. `RouteResultScreen` + `RouteResultViewModel` — displays result, publishes route via `RouteRepository.createRoute()`, save/bookmark after publish
+4. `RouteResultScreen` + `RouteResultViewModel` — displays result with `RoutePointCard`, publishes route via `RouteRepository.createRoute()`, save/bookmark after publish
+
+### Manual Route Creation
+Two-screen flow with waypoint support:
+1. `RouteCreateScreen` — form (title, description, region, difficulty, tags, photos) + map preview + waypoint list
+2. `RouteMapPickerScreen` — interactive map for building routes:
+   - **Tap map** to add waypoints → naming dialog (title + optional description)
+   - **Address search** via Yandex `SuggestSession` → tap suggestion to add as waypoint
+   - `PedestrianRouter` builds walking route between points (fallback: straight-line + Haversine)
+   - Undo/clear controls, distance + point count display
+
+Data flow: `RouteMapPickerScreen` → `onRouteSelected` callback (coordinates, geometry, distance, `WaypointEntry` list) → `Navigation.kt` `RouteMapData` → `RouteCreateViewModel.setRouteCoordinates()` → `submit()` converts `WaypointEntry` to `WaypointDto` and sends to API.
+
+### Walking Navigation
+`RouteDetailScreen` includes a "Start Walking" button that opens a full-screen map overlay:
+- GPS `UserLocationLayer` with heading tracking
+- Route polyline + start/finish markers
+- Camera auto-fits to route bounds
+- State managed via `RouteDetailViewModel.isNavigating`
+
+### Yandex MapKit Patterns
+- **MapKit lifecycle**: `MapKitFactory.getInstance().onStart()/onStop()` must be called — required even for Search/Suggest API without a MapView (see `CitySurveyScreen`, `RouteMapPickerScreen`)
+- **SuggestSession**: `searchManager.createSuggestSession()` → `suggest(query, boundingBox, options, listener)` — listener takes `SuggestResponse`, not a list
+- **PedestrianRouter**: `requestRoutes()` with `RequestPoint` (first/last = `WAYPOINT`, middle = `VIAPOINT`)
+- **Map markers**: Custom bitmap via `ImageProvider.fromBitmap()` on placemarks
+- **Polyline style**: 5px stroke `#2D6A4F` (forest green) + 2px white outline
 
 ### Localization
 Full ru/en support. Default locale is Russian (`values/strings.xml`), English in `values-en/strings.xml`. All screens use `stringResource()`. Locale switching in `MainActivity` via `ContextWrapper` pattern that preserves the Activity context chain for Hilt compatibility.
 
 ### Onboarding
-5-step flow (Welcome → City → Fitness → Interests → Profile) managed by `OnboardingViewModel` + `OnboardingRepository`. Persisted to `DataStore<Preferences>`.
+5-step flow (Welcome → City → Fitness → Interests → Profile) managed by `OnboardingViewModel` + `OnboardingRepository`. Persisted to `DataStore<Preferences>` with `SharingStarted.Eagerly` (not `WhileSubscribed` — that caused data loss).
+
+City selection uses Yandex Suggest for worldwide search + preset popular cities.
 
 ### Key Enums
 - `Difficulty`: EASY, MODERATE, HARD, EXPERT — used in feed filters and route creation
 - `RouteStatus`: DRAFT, PRIVATE, PUBLISHED
 - `NotificationType`: NEW_FOLLOWER, ROUTE_LIKE, NEW_COMMENT
+
+### Common Pitfalls
+- `SearchFactory.initialize()` does not exist in MapKit 4.8.1 — search is auto-initialized
+- `SuggestListener.onResponse` takes `SuggestResponse`, not `MutableList<SuggestItem>`
+- Race conditions in StateFlow `.update {}`: always read current state inside the lambda (e.g., `state.route?.let { current -> ... }` not a captured variable)
+- Screens using `AnimatedContent` in navigation are recreated on every visit — use `LaunchedEffect(Unit)` for data reload

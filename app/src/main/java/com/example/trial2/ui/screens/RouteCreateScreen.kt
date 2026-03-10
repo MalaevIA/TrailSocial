@@ -1,7 +1,9 @@
 package com.trail2.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -11,8 +13,10 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -111,6 +115,47 @@ fun RouteCreateScreen(
                     )
                     TextButton(onClick = onPickRoute) {
                         Text(stringResource(R.string.edit))
+                    }
+                }
+                // Waypoints list
+                if (form.waypoints.isNotEmpty()) {
+                    Text(
+                        stringResource(R.string.map_picker_waypoints),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    form.waypoints.forEachIndexed { idx, wp ->
+                        val dotColor = when {
+                            idx == 0 -> Color(0xFF52B788)
+                            idx == form.waypoints.lastIndex && form.waypoints.size > 1 -> Color(0xFFE63946)
+                            else -> Color(0xFF457B9D)
+                        }
+                        val icon = when {
+                            idx == 0 -> "S"
+                            idx == form.waypoints.lastIndex && form.waypoints.size > 1 -> "F"
+                            else -> "${idx + 1}"
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(26.dp)
+                                    .clip(CircleShape)
+                                    .background(dotColor),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(icon, fontSize = 10.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(wp.name, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                if (wp.description.isNotBlank()) {
+                                    Text(wp.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                                }
+                            }
+                        }
                     }
                 }
             } else {

@@ -191,6 +191,13 @@
     <string name="map_picker_info">%1$d точек · %2$.1f км</string>
     <string name="map_picker_distance">Дистанция</string>
     <string name="map_picker_points">Точек</string>
+    <string name="map_picker_search_hint">Поиск адреса…</string>
+    <string name="map_picker_add_point_title">Название точки</string>
+    <string name="map_picker_add_point_desc">Описание (необязательно)</string>
+    <string name="map_picker_point_name_hint">Например: Вход в парк</string>
+    <string name="map_picker_point_desc_hint">Что интересного в этой точке</string>
+    <string name="map_picker_no_results">Ничего не найдено</string>
+    <string name="map_picker_waypoints">Точки маршрута</string>
 
     <!-- Login screen -->
     <string name="login_title">Верста</string>

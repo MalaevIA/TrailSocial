@@ -1,32 +1,49 @@
 package com.trail2.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.res.stringResource
 import com.trail2.R
 import com.trail2.ui.theme.ForestGreen
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.RequestPoint
 import com.yandex.mapkit.RequestPointType
+import com.yandex.mapkit.geometry.BoundingBox
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.geometry.Polyline
 import com.yandex.mapkit.map.CameraPosition
 import com.yandex.mapkit.map.InputListener
 import com.yandex.mapkit.map.Map
 import com.yandex.mapkit.mapview.MapView
+import com.yandex.mapkit.search.SearchFactory
+import com.yandex.mapkit.search.SearchManagerType
+import com.yandex.mapkit.search.SearchOptions
+import com.yandex.mapkit.search.SearchType
+import com.yandex.mapkit.search.SuggestOptions
+import com.yandex.mapkit.search.SuggestResponse
+import com.yandex.mapkit.search.SuggestSession
+import com.yandex.mapkit.search.SuggestType
 import com.yandex.mapkit.transport.TransportFactory
 import com.yandex.mapkit.transport.masstransit.PedestrianRouter
 import com.yandex.mapkit.transport.masstransit.Route
@@ -38,6 +55,12 @@ import com.yandex.runtime.Error
 import com.yandex.runtime.image.ImageProvider
 import kotlin.math.*
 
+data class WaypointEntry(
+    val point: Point,
+    val name: String = "",
+    val description: String = ""
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RouteMapPickerScreen(
@@ -46,18 +69,32 @@ fun RouteMapPickerScreen(
         startLat: Double, startLng: Double,
         endLat: Double, endLng: Double,
         geometry: List<List<Double>>,
-        distanceKm: Double
+        distanceKm: Double,
+        waypoints: List<WaypointEntry>
     ) -> Unit
 ) {
     val context = LocalContext.current
-    var points by remember { mutableStateOf(listOf<Point>()) }
+    var waypoints by remember { mutableStateOf(listOf<WaypointEntry>()) }
+    val points by remember { derivedStateOf { waypoints.map { it.point } } }
     var distanceKm by remember { mutableDoubleStateOf(0.0) }
-    // Геометрия реального маршрута от PedestrianRouter
     var routeGeometry by remember { mutableStateOf<List<Point>>(emptyList()) }
     var isRoutingInProgress by remember { mutableStateOf(false) }
     val mapView = remember { MapView(context) }
     val routerSession = remember { mutableStateOf<Session?>(null) }
     val pedestrianRouter = remember { TransportFactory.getInstance().createPedestrianRouter() }
+
+    // Search
+    var searchQuery by remember { mutableStateOf("") }
+    var suggestions by remember { mutableStateOf<List<SuggestItem>>(emptyList()) }
+    var isSearchExpanded by remember { mutableStateOf(false) }
+    val searchManager = remember { SearchFactory.getInstance().createSearchManager(SearchManagerType.COMBINED) }
+    val suggestSession = remember { searchManager.createSuggestSession() }
+
+    // Waypoint naming dialog
+    var pendingPoint by remember { mutableStateOf<Point?>(null) }
+    var pendingName by remember { mutableStateOf("") }
+    var pendingDesc by remember { mutableStateOf("") }
+    var pendingSearchTitle by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(Unit) {
         MapKitFactory.getInstance().onStart()
@@ -71,39 +108,92 @@ fun RouteMapPickerScreen(
         }
     }
 
+    // Suggest listener
+    val suggestOptions = remember {
+        SuggestOptions().setSuggestTypes(
+            SuggestType.GEO.value or SuggestType.BIZ.value
+        )
+    }
+    val boundingBox = remember {
+        BoundingBox(Point(41.0, 19.0), Point(82.0, 180.0))
+    }
+
+    // Search when query changes
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.length >= 2) {
+            suggestSession.suggest(
+                searchQuery,
+                boundingBox,
+                suggestOptions,
+                object : SuggestSession.SuggestListener {
+                    override fun onResponse(response: SuggestResponse) {
+                        suggestions = response.items.mapNotNull { item ->
+                            val center = item.center
+                            if (center != null) {
+                                SuggestItem(
+                                    title = item.title.text,
+                                    subtitle = item.subtitle?.text ?: "",
+                                    point = center
+                                )
+                            } else null
+                        }
+                    }
+
+                    override fun onError(error: Error) {
+                        suggestions = emptyList()
+                    }
+                }
+            )
+        } else {
+            suggestions = emptyList()
+        }
+    }
+
+    fun addWaypoint(point: Point, name: String, description: String) {
+        val newWaypoints = waypoints + WaypointEntry(point, name, description)
+        waypoints = newWaypoints
+        val newPoints = newWaypoints.map { it.point }
+        drawMarkers(mapView, newPoints)
+
+        if (newPoints.size >= 2) {
+            isRoutingInProgress = true
+            requestPedestrianRoute(
+                pedestrianRouter = pedestrianRouter,
+                points = newPoints,
+                mapView = mapView,
+                routerSession = routerSession,
+                onResult = { geometry, distance ->
+                    routeGeometry = geometry
+                    distanceKm = distance
+                    isRoutingInProgress = false
+                },
+                onFallback = {
+                    routeGeometry = newPoints
+                    distanceKm = totalDistanceKm(newPoints)
+                    drawFallbackPolyline(mapView, newPoints)
+                    isRoutingInProgress = false
+                }
+            )
+        } else {
+            routeGeometry = emptyList()
+            distanceKm = 0.0
+        }
+
+        // Move camera to the new point
+        mapView.mapWindow.map.move(
+            CameraPosition(point, 14f, 0f, 0f)
+        )
+    }
+
     // Map tap listener
     DisposableEffect(Unit) {
         val listener = object : InputListener {
             override fun onMapTap(map: Map, point: Point) {
                 if (isRoutingInProgress) return
-                val newPoints = points + point
-                points = newPoints
-                drawMarkers(mapView, newPoints)
-
-                if (newPoints.size >= 2) {
-                    isRoutingInProgress = true
-                    requestPedestrianRoute(
-                        pedestrianRouter = pedestrianRouter,
-                        points = newPoints,
-                        mapView = mapView,
-                        routerSession = routerSession,
-                        onResult = { geometry, distance ->
-                            routeGeometry = geometry
-                            distanceKm = distance
-                            isRoutingInProgress = false
-                        },
-                        onFallback = {
-                            // Фолбэк — прямые линии
-                            routeGeometry = newPoints
-                            distanceKm = totalDistanceKm(newPoints)
-                            drawFallbackPolyline(mapView, newPoints)
-                            isRoutingInProgress = false
-                        }
-                    )
-                } else {
-                    routeGeometry = emptyList()
-                    distanceKm = 0.0
-                }
+                pendingPoint = point
+                pendingName = ""
+                pendingDesc = ""
+                pendingSearchTitle = null
             }
 
             override fun onMapLongTap(map: Map, point: Point) {}
@@ -128,6 +218,48 @@ fun RouteMapPickerScreen(
         else -> Color(0xFFD8F3DC)
     }
 
+    // Waypoint naming dialog
+    if (pendingPoint != null) {
+        AlertDialog(
+            onDismissRequest = { pendingPoint = null },
+            title = { Text(stringResource(R.string.map_picker_add_point_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = pendingName,
+                        onValueChange = { pendingName = it },
+                        label = { Text(stringResource(R.string.map_picker_point_name_hint)) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = pendingDesc,
+                        onValueChange = { pendingDesc = it },
+                        label = { Text(stringResource(R.string.map_picker_point_desc_hint)) },
+                        maxLines = 3,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val pt = pendingPoint!!
+                    val name = pendingName.ifBlank { pendingSearchTitle ?: "Точка ${waypoints.size + 1}" }
+                    addWaypoint(pt, name, pendingDesc)
+                    pendingPoint = null
+                    pendingSearchTitle = null
+                }) {
+                    Text(stringResource(R.string.add))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingPoint = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -140,10 +272,11 @@ fun RouteMapPickerScreen(
                 actions = {
                     IconButton(
                         onClick = {
-                            if (points.isNotEmpty() && !isRoutingInProgress) {
-                                val newPoints = points.dropLast(1)
-                                points = newPoints
+                            if (waypoints.isNotEmpty() && !isRoutingInProgress) {
+                                val newWaypoints = waypoints.dropLast(1)
+                                waypoints = newWaypoints
                                 routeGeometry = emptyList()
+                                val newPoints = newWaypoints.map { it.point }
 
                                 if (newPoints.size >= 2) {
                                     isRoutingInProgress = true
@@ -173,7 +306,7 @@ fun RouteMapPickerScreen(
                                 }
                             }
                         },
-                        enabled = points.isNotEmpty() && !isRoutingInProgress
+                        enabled = waypoints.isNotEmpty() && !isRoutingInProgress
                     ) {
                         Icon(Icons.Filled.Undo, stringResource(R.string.map_picker_undo))
                     }
@@ -206,14 +339,14 @@ fun RouteMapPickerScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedButton(
                             onClick = {
-                                points = emptyList()
+                                waypoints = emptyList()
                                 distanceKm = 0.0
                                 routeGeometry = emptyList()
                                 mapView.mapWindow.map.mapObjects.clear()
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
-                            enabled = points.isNotEmpty() && !isRoutingInProgress
+                            enabled = waypoints.isNotEmpty() && !isRoutingInProgress
                         ) {
                             Text(stringResource(R.string.clear))
                         }
@@ -221,7 +354,6 @@ fun RouteMapPickerScreen(
                             onClick = {
                                 val first = points.first()
                                 val last = points.last()
-                                // Передаём реальную геометрию маршрута
                                 val geometryToSend = if (routeGeometry.size >= 2) {
                                     routeGeometry.map { p -> listOf(p.longitude, p.latitude) }
                                 } else {
@@ -230,7 +362,8 @@ fun RouteMapPickerScreen(
                                 onRouteSelected(
                                     first.latitude, first.longitude,
                                     last.latitude, last.longitude,
-                                    geometryToSend, distanceKm
+                                    geometryToSend, distanceKm,
+                                    waypoints
                                 )
                             },
                             modifier = Modifier.weight(1f),
@@ -245,29 +378,188 @@ fun RouteMapPickerScreen(
             }
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            AndroidView(
-                factory = { mapView },
-                modifier = Modifier.fillMaxSize()
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // Search bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = {
+                    searchQuery = it
+                    isSearchExpanded = it.length >= 2
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                placeholder = { Text(stringResource(R.string.map_picker_search_hint)) },
+                leadingIcon = { Icon(Icons.Filled.Search, null, modifier = Modifier.size(20.dp)) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = {
+                            searchQuery = ""
+                            isSearchExpanded = false
+                            suggestions = emptyList()
+                        }) {
+                            Icon(Icons.Filled.Close, null, modifier = Modifier.size(20.dp))
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
             )
 
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(12.dp),
-                shape = RoundedCornerShape(12.dp),
-                color = bannerColor,
-                shadowElevation = 4.dp
-            ) {
-                Text(
-                    text = bannerText,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                    fontSize = 14.sp
+            Box(modifier = Modifier.weight(1f)) {
+                // Map
+                AndroidView(
+                    factory = { mapView },
+                    modifier = Modifier.fillMaxSize()
                 )
+
+                // Banner
+                if (!isSearchExpanded) {
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(12.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        color = bannerColor,
+                        shadowElevation = 4.dp
+                    ) {
+                        Text(
+                            text = bannerText,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+
+                // Suggestions overlay
+                if (isSearchExpanded && suggestions.isNotEmpty()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        shadowElevation = 8.dp,
+                        color = MaterialTheme.colorScheme.surface
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier.heightIn(max = 250.dp)
+                        ) {
+                            itemsIndexed(suggestions) { _, item ->
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            pendingPoint = item.point
+                                            pendingName = item.title
+                                            pendingDesc = ""
+                                            pendingSearchTitle = item.title
+                                            searchQuery = ""
+                                            isSearchExpanded = false
+                                            suggestions = emptyList()
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                                ) {
+                                    Text(item.title, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                    if (item.subtitle.isNotBlank()) {
+                                        Text(item.subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                HorizontalDivider()
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Waypoint list
+            if (waypoints.isNotEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 4.dp
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        Text(
+                            stringResource(R.string.map_picker_waypoints),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                        LazyColumn(modifier = Modifier.heightIn(max = 160.dp)) {
+                            itemsIndexed(waypoints) { idx, wp ->
+                                WaypointListItem(
+                                    waypoint = wp,
+                                    index = idx,
+                                    isFirst = idx == 0,
+                                    isLast = idx == waypoints.lastIndex && waypoints.size > 1
+                                )
+                                if (idx < waypoints.lastIndex) {
+                                    Spacer(Modifier.height(4.dp))
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
+
+@Composable
+private fun WaypointListItem(
+    waypoint: WaypointEntry,
+    index: Int,
+    isFirst: Boolean,
+    isLast: Boolean
+) {
+    val dotColor = when {
+        isFirst -> Color(0xFF52B788)
+        isLast -> Color(0xFFE63946)
+        else -> Color(0xFF457B9D)
+    }
+    val icon = when {
+        isFirst -> "S"
+        isLast -> "F"
+        else -> "${index + 1}"
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(dotColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(icon, fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(waypoint.name, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+            if (waypoint.description.isNotBlank()) {
+                Text(
+                    waypoint.description,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
+                )
+            }
+        }
+        Text(
+            "${"%.4f".format(waypoint.point.latitude)}, ${"%.4f".format(waypoint.point.longitude)}",
+            fontSize = 9.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(0.6f)
+        )
+    }
+}
+
+private data class SuggestItem(
+    val title: String,
+    val subtitle: String,
+    val point: Point
+)
 
 // ── Построение пешеходного маршрута ──────────────────────
 
@@ -294,17 +586,14 @@ private fun requestPedestrianRoute(
                 if (routes.isNotEmpty()) {
                     val bestRoute = routes[0]
                     val geometryPoints = bestRoute.geometry.points
-                    // Дистанция из метаданных маршрута
                     val metadata = bestRoute.metadata
                     val weight = metadata.weight
-                    val walkingDistance = weight.walkingDistance.value // в метрах
+                    val walkingDistance = weight.walkingDistance.value
                     val distKm = walkingDistance / 1000.0
 
                     val map = mapView.mapWindow.map
-                    // Удаляем старую полилинию (маркеры перерисуем)
                     map.mapObjects.clear()
                     drawMarkers(mapView, points)
-                    // Рисуем реальный маршрут
                     val polylineObj = map.mapObjects.addPolyline(Polyline(geometryPoints))
                     polylineObj.apply {
                         strokeWidth = 5f

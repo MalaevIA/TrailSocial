@@ -191,6 +191,13 @@
     <string name="map_picker_info">%1$d points · %2$.1f km</string>
     <string name="map_picker_distance">Distance</string>
     <string name="map_picker_points">Points</string>
+    <string name="map_picker_search_hint">Search address…</string>
+    <string name="map_picker_add_point_title">Point name</string>
+    <string name="map_picker_add_point_desc">Description (optional)</string>
+    <string name="map_picker_point_name_hint">E.g.: Park entrance</string>
+    <string name="map_picker_point_desc_hint">What\'s interesting at this point</string>
+    <string name="map_picker_no_results">No results found</string>
+    <string name="map_picker_waypoints">Route waypoints</string>
 
     <!-- Login screen -->
     <string name="login_title">Верста</string>

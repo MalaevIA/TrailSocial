@@ -90,7 +90,8 @@ private data class RouteMapData(
     val endLat: Double,
     val endLng: Double,
     val geometry: List<List<Double>>,
-    val distanceKm: Double
+    val distanceKm: Double,
+    val waypoints: List<com.trail2.ui.screens.WaypointEntry> = emptyList()
 )
 
 @Composable
@@ -140,7 +141,8 @@ fun MainAppContent() {
                         data.startLat, data.startLng,
                         data.endLat, data.endLng,
                         data.geometry,
-                        data.distanceKm
+                        data.distanceKm,
+                        data.waypoints
                     )
                     routeMapResult = null
                 }
@@ -157,8 +159,8 @@ fun MainAppContent() {
         is Screen.RouteMapPicker -> {
             RouteMapPickerScreen(
                 onBack = { currentScreen = Screen.RouteCreate },
-                onRouteSelected = { startLat, startLng, endLat, endLng, geometry, distanceKm ->
-                    routeMapResult = RouteMapData(startLat, startLng, endLat, endLng, geometry, distanceKm)
+                onRouteSelected = { startLat, startLng, endLat, endLng, geometry, distanceKm, waypoints ->
+                    routeMapResult = RouteMapData(startLat, startLng, endLat, endLng, geometry, distanceKm, waypoints)
                     currentScreen = Screen.RouteCreate
                 }
             )

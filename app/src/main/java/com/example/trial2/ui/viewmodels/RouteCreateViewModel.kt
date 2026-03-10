@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trail2.data.remote.ApiResult
 import com.trail2.data.remote.dto.GeoJsonLineStringDto
+import com.trail2.data.remote.dto.WaypointDto
 import com.trail2.data.repository.RouteRepository
 import com.trail2.data.repository.UploadRepository
+import com.trail2.ui.screens.WaypointEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,7 +33,8 @@ data class RouteCreateForm(
     val endLng: Double? = null,
     val geometry: List<List<Double>> = emptyList(),
     // Auto-computed from geometry (Haversine)
-    val distanceKm: Double? = null
+    val distanceKm: Double? = null,
+    val waypoints: List<WaypointEntry> = emptyList()
 ) {
     val hasCoordinates: Boolean
         get() = startLat != null && startLng != null && endLat != null && endLng != null && geometry.size >= 2
@@ -77,13 +80,15 @@ class RouteCreateViewModel @Inject constructor(
         startLat: Double, startLng: Double,
         endLat: Double, endLng: Double,
         geometry: List<List<Double>>,
-        distanceKm: Double
+        distanceKm: Double,
+        waypoints: List<WaypointEntry> = emptyList()
     ) = updateForm {
         copy(
             startLat = startLat, startLng = startLng,
             endLat = endLat, endLng = endLng,
             geometry = geometry,
-            distanceKm = distanceKm
+            distanceKm = distanceKm,
+            waypoints = waypoints
         )
     }
 
@@ -92,7 +97,8 @@ class RouteCreateViewModel @Inject constructor(
             startLat = null, startLng = null,
             endLat = null, endLng = null,
             geometry = emptyList(),
-            distanceKm = null
+            distanceKm = null,
+            waypoints = emptyList()
         )
     }
 
@@ -122,6 +128,14 @@ class RouteCreateViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isSubmitting = true, error = null) }
+            val waypointDtos = form.waypoints.takeIf { it.isNotEmpty() }?.map { wp ->
+                WaypointDto(
+                    lat = wp.point.latitude,
+                    lng = wp.point.longitude,
+                    name = wp.name,
+                    description = wp.description
+                )
+            }
             val result = routeRepository.createRoute(
                 title = form.title,
                 description = form.description.ifBlank { null },
@@ -137,7 +151,8 @@ class RouteCreateViewModel @Inject constructor(
                 startLng = form.startLng,
                 endLat = form.endLat,
                 endLng = form.endLng,
-                geometry = GeoJsonLineStringDto("LineString", form.geometry)
+                geometry = GeoJsonLineStringDto("LineString", form.geometry),
+                waypoints = waypointDtos
             )
             when (result) {
                 is ApiResult.Success -> {
