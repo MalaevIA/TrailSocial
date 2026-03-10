@@ -112,8 +112,10 @@
     <string name="profile_logout_action">Выйти</string>
     <string name="profile_tab_routes">Маршруты</string>
     <string name="profile_tab_saved">Избранное</string>
+    <string name="profile_tab_drafts">Черновики</string>
     <string name="profile_no_routes">Пока нет маршрутов</string>
     <string name="profile_no_saved">Нет сохранённых маршрутов</string>
+    <string name="profile_no_drafts">Нет черновиков</string>
 
     <!-- Route Detail screen -->
     <string name="route_not_found">Маршрут не найден</string>
@@ -123,6 +125,16 @@
     <string name="route_unsubscribe">Отписаться</string>
     <string name="route_start_walking">Начать прогулку</string>
     <string name="route_stop_walking">Завершить</string>
+    <string name="route_edit">Редактировать</string>
+    <string name="route_clone_draft">Клонировать в черновик</string>
+    <string name="route_publish">Опубликовать</string>
+    <string name="route_draft_badge">Черновик</string>
+    <string name="route_cloned">Маршрут клонирован в черновики</string>
+    <string name="route_edit_on_map">Редактировать на карте</string>
+    <string name="route_delete">Удалить маршрут</string>
+    <string name="route_delete_confirm">Удалить маршрут?</string>
+    <string name="route_delete_message">Маршрут будет удалён без возможности восстановления.</string>
+    <string name="result_edit_route">Редактировать маршрут</string>
     <string name="route_walking_title">Навигация по маршруту</string>
     <string name="route_no_map">Карта маршрута недоступна</string>
     <string name="route_comments_likes">%1$d комментариев · %2$d лайков</string>

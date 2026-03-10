@@ -28,6 +28,7 @@ sealed class Screen {
     object RouteCreate : Screen()
     object Notifications : Screen()
     data class RouteDetail(val routeId: String) : Screen()
+    data class RouteEdit(val routeId: String) : Screen()
     data class AIRouteResult(val route: GeneratedRoute) : Screen()
     data class UserProfile(val userId: String) : Screen()
     data class FollowList(val userId: String, val type: FollowListType) : Screen()
@@ -100,6 +101,7 @@ fun MainAppContent() {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Feed) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var routeMapResult by remember { mutableStateOf<RouteMapData?>(null) }
+    var editingRouteId by remember { mutableStateOf<String?>(null) }
     val builderVm: RouteBuilderViewModel = hiltViewModel()
 
     val navigateBack: () -> Unit = { currentScreen = bottomTabs[selectedTabIndex].screen }
@@ -109,7 +111,9 @@ fun MainAppContent() {
             RouteDetailScreen(
                 routeId = screen.routeId,
                 onBack = navigateBack,
-                onAuthorClick = { userId -> currentScreen = Screen.UserProfile(userId) }
+                onAuthorClick = { userId -> currentScreen = Screen.UserProfile(userId) },
+                onEditRoute = { routeId -> currentScreen = Screen.RouteEdit(routeId) },
+                onClonedRoute = { routeId -> currentScreen = Screen.RouteDetail(routeId) }
             )
             return
         }
@@ -128,7 +132,44 @@ fun MainAppContent() {
                     builderVm.resetFully()
                     selectedTabIndex = 0
                     currentScreen = Screen.RouteDetail(routeId)
+                },
+                onEditRoute = { routeId ->
+                    builderVm.resetFully()
+                    currentScreen = Screen.RouteEdit(routeId)
                 }
+            )
+            return
+        }
+        is Screen.RouteEdit -> {
+            val createVm: com.trail2.ui.viewmodels.RouteCreateViewModel = hiltViewModel()
+
+            LaunchedEffect(screen.routeId) {
+                createVm.loadForEdit(screen.routeId)
+            }
+
+            // Apply map result when returning from picker
+            LaunchedEffect(routeMapResult) {
+                routeMapResult?.let { data ->
+                    createVm.setRouteCoordinates(
+                        data.startLat, data.startLng,
+                        data.endLat, data.endLng,
+                        data.geometry,
+                        data.distanceKm,
+                        data.durationMinutes,
+                        data.waypoints
+                    )
+                    routeMapResult = null
+                }
+            }
+
+            RouteCreateScreen(
+                onBack = navigateBack,
+                onRouteCreated = { routeId -> currentScreen = Screen.RouteDetail(routeId) },
+                onPickRoute = {
+                    editingRouteId = screen.routeId
+                    currentScreen = Screen.RouteMapPicker
+                },
+                vm = createVm
             )
             return
         }
@@ -160,17 +201,23 @@ fun MainAppContent() {
             RouteCreateScreen(
                 onBack = navigateBack,
                 onRouteCreated = { routeId -> currentScreen = Screen.RouteDetail(routeId) },
-                onPickRoute = { currentScreen = Screen.RouteMapPicker },
+                onPickRoute = {
+                    editingRouteId = null
+                    currentScreen = Screen.RouteMapPicker
+                },
                 vm = createVm
             )
             return
         }
         is Screen.RouteMapPicker -> {
+            val returnToEdit = editingRouteId
             RouteMapPickerScreen(
-                onBack = { currentScreen = Screen.RouteCreate },
+                onBack = {
+                    currentScreen = if (returnToEdit != null) Screen.RouteEdit(returnToEdit) else Screen.RouteCreate
+                },
                 onRouteSelected = { startLat, startLng, endLat, endLng, geometry, distanceKm, durationMinutes, waypoints ->
                     routeMapResult = RouteMapData(startLat, startLng, endLat, endLng, geometry, distanceKm, durationMinutes, waypoints)
-                    currentScreen = Screen.RouteCreate
+                    currentScreen = if (returnToEdit != null) Screen.RouteEdit(returnToEdit) else Screen.RouteCreate
                 }
             )
             return

@@ -19,7 +19,8 @@ data class RouteResultUiState(
     val isPublishing: Boolean = false,
     val publishedRouteId: String? = null,
     val publishError: String? = null,
-    val isSaved: Boolean = false
+    val isSaved: Boolean = false,
+    val draftRouteId: String? = null
 )
 
 @HiltViewModel
@@ -90,6 +91,36 @@ class RouteResultViewModel @Inject constructor(
                         it.copy(isPublishing = false, publishError = "Нет подключения к сети")
                     }
                 }
+            }
+        }
+    }
+
+    fun saveDraft(route: GeneratedRoute) {
+        if (_uiState.value.isPublishing) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isPublishing = true, publishError = null) }
+            val startPoint = route.points.firstOrNull()
+            val endPoint = route.points.lastOrNull()
+            val waypoints = route.points.map { point ->
+                WaypointDto(lat = point.lat, lng = point.lon, name = point.title, description = point.description.ifBlank { null })
+            }
+            val geometry = route.geometry?.let { GeoJsonLineStringDto(it.type, it.coordinates) }
+                ?: GeoJsonLineStringDto(coordinates = route.points.map { listOf(it.lon, it.lat) })
+
+            val result = routeRepository.createRoute(
+                title = route.title, description = route.description,
+                region = route.region.ifBlank { null }, distanceKm = route.distanceKm,
+                elevationGainM = route.elevationGainM.toDouble(), durationMinutes = route.durationMin,
+                difficulty = route.difficulty.lowercase(), tags = route.tags.ifEmpty { null },
+                status = "draft",
+                startLat = startPoint?.lat, startLng = startPoint?.lon,
+                endLat = endPoint?.lat, endLng = endPoint?.lon,
+                geometry = geometry, waypoints = waypoints
+            )
+            when (result) {
+                is ApiResult.Success -> _uiState.update { it.copy(isPublishing = false, draftRouteId = result.data.id) }
+                is ApiResult.Error -> _uiState.update { it.copy(isPublishing = false, publishError = result.message) }
+                is ApiResult.NetworkError -> _uiState.update { it.copy(isPublishing = false, publishError = "Нет подключения") }
             }
         }
     }

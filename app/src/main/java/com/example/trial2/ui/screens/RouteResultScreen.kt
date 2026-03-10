@@ -68,6 +68,7 @@ fun RouteResultScreen(
     onBack: () -> Unit,
     onRebuild: () -> Unit,
     onSaved: (String) -> Unit = {},
+    onEditRoute: (String) -> Unit = {},
     vm: RouteResultViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -78,6 +79,12 @@ fun RouteResultScreen(
     LaunchedEffect(uiState.publishedRouteId) {
         uiState.publishedRouteId?.let { routeId ->
             onSaved(routeId)
+        }
+    }
+
+    LaunchedEffect(uiState.draftRouteId) {
+        uiState.draftRouteId?.let { routeId ->
+            onEditRoute(routeId)
         }
     }
 
@@ -163,7 +170,8 @@ fun RouteResultScreen(
                     route = route,
                     isSaving = uiState.isPublishing,
                     saveError = uiState.publishError,
-                    onPublish = { vm.publishRoute(route) }
+                    onPublish = { vm.publishRoute(route) },
+                    onSaveDraft = { vm.saveDraft(route) }
                 )
             }
         }
@@ -415,7 +423,8 @@ private fun RouteDetailsPanel(
     route: GeneratedRoute,
     isSaving: Boolean = false,
     saveError: String? = null,
-    onPublish: () -> Unit = {}
+    onPublish: () -> Unit = {},
+    onSaveDraft: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -497,6 +506,23 @@ private fun RouteDetailsPanel(
             }
             Text(
                 if (isSaving) stringResource(R.string.result_publishing) else stringResource(R.string.result_publish),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedButton(
+            onClick = onSaveDraft,
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isSaving,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(Icons.Outlined.Edit, null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(
+                stringResource(R.string.result_edit_route),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold
             )

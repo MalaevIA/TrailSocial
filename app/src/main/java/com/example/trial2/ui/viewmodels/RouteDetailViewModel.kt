@@ -3,8 +3,12 @@ package com.trail2.ui.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trail2.data.Comment
+import com.trail2.data.RouteStatus
 import com.trail2.data.TrailRoute
 import com.trail2.data.remote.ApiResult
+import com.trail2.data.remote.dto.GeoJsonLineStringDto
+import com.trail2.data.remote.dto.RouteUpdateDto
+import com.trail2.data.remote.dto.WaypointDto
 import com.trail2.data.repository.CommentRepository
 import com.trail2.data.repository.RouteRepository
 import com.trail2.data.repository.UserRepository
@@ -23,8 +27,14 @@ data class RouteDetailUiState(
     val error: String? = null,
     val commentText: String = "",
     val isSendingComment: Boolean = false,
-    val isNavigating: Boolean = false
-)
+    val isNavigating: Boolean = false,
+    val clonedRouteId: String? = null,
+    val isCloning: Boolean = false,
+    val currentUserId: String? = null
+) {
+    val isOwnRoute: Boolean
+        get() = currentUserId != null && route?.author?.id == currentUserId
+}
 
 @HiltViewModel
 class RouteDetailViewModel @Inject constructor(
@@ -36,9 +46,18 @@ class RouteDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(RouteDetailUiState())
     val uiState: StateFlow<RouteDetailUiState> = _uiState.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            when (val result = userRepository.getMe()) {
+                is ApiResult.Success -> _uiState.update { it.copy(currentUserId = result.data.id) }
+                else -> {}
+            }
+        }
+    }
+
     fun loadRoute(routeId: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true, error = null, clonedRouteId = null) }
             when (val result = routeRepository.getRouteById(routeId)) {
                 is ApiResult.Success -> _uiState.update { it.copy(route = result.data, isLoading = false) }
                 is ApiResult.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
@@ -129,6 +148,59 @@ class RouteDetailViewModel @Inject constructor(
 
     fun stopNavigation() {
         _uiState.update { it.copy(isNavigating = false) }
+    }
+
+    fun cloneToDraft() {
+        val route = _uiState.value.route ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isCloning = true) }
+            val result = routeRepository.createRoute(
+                title = route.title,
+                description = route.description.ifBlank { null },
+                region = route.region.ifBlank { null },
+                distanceKm = route.distanceKm,
+                elevationGainM = route.elevationGainM.toDouble(),
+                durationMinutes = route.durationMinutes,
+                difficulty = route.difficulty.name.lowercase(),
+                photos = route.photos.ifEmpty { null },
+                tags = route.tags.ifEmpty { null },
+                status = "draft",
+                startLat = route.startLat,
+                startLng = route.startLng,
+                endLat = route.endLat,
+                endLng = route.endLng,
+                geometry = route.geometry?.let { GeoJsonLineStringDto(it.type, it.coordinates) },
+                waypoints = route.waypoints?.map { WaypointDto(it.lat, it.lng, it.name, it.description ?: "") }
+            )
+            when (result) {
+                is ApiResult.Success -> _uiState.update {
+                    it.copy(isCloning = false, clonedRouteId = result.data.id)
+                }
+                else -> _uiState.update { it.copy(isCloning = false) }
+            }
+        }
+    }
+
+    fun deleteRoute() {
+        val route = _uiState.value.route ?: return
+        viewModelScope.launch {
+            routeRepository.deleteRoute(route.id)
+        }
+    }
+
+    fun publishDraft() {
+        val route = _uiState.value.route ?: return
+        viewModelScope.launch {
+            val result = routeRepository.updateRoute(
+                routeId = route.id,
+                update = RouteUpdateDto(status = "published")
+            )
+            if (result is ApiResult.Success) {
+                _uiState.update { state ->
+                    state.copy(route = result.data)
+                }
+            }
+        }
     }
 
     fun toggleFollow() {

@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.R
 import com.trail2.data.Difficulty
+import com.trail2.data.RouteStatus
 import com.trail2.ui.components.*
 import com.trail2.ui.components.RouteMapView
 import com.trail2.ui.theme.ForestGreen
@@ -51,11 +52,18 @@ fun RouteDetailScreen(
     routeId: String,
     onBack: () -> Unit,
     onAuthorClick: (String) -> Unit = {},
+    onEditRoute: (String) -> Unit = {},
+    onClonedRoute: (String) -> Unit = {},
     vm: RouteDetailViewModel = hiltViewModel()
 ) {
     val uiState by vm.uiState.collectAsStateWithLifecycle()
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(routeId) { vm.loadRoute(routeId) }
+
+    LaunchedEffect(uiState.clonedRouteId) {
+        uiState.clonedRouteId?.let { onClonedRoute(it) }
+    }
 
     val route = uiState.route
 
@@ -352,6 +360,77 @@ fun RouteDetailScreen(
                     }
                 }
 
+                // Edit / Clone / Publish
+                Spacer(Modifier.height(12.dp))
+                if (uiState.isOwnRoute) {
+                    // Own route: Edit + Publish (if draft)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedButton(
+                            onClick = { onEditRoute(route.id) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Outlined.EditLocationAlt, null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.route_edit_on_map))
+                        }
+                        if (route.status == RouteStatus.DRAFT) {
+                            Button(
+                                onClick = vm::publishDraft,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+                            ) {
+                                Icon(Icons.Filled.Publish, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(stringResource(R.string.route_publish))
+                            }
+                        }
+                    }
+                    if (route.status == RouteStatus.DRAFT) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            Text(
+                                stringResource(R.string.route_draft_badge),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Outlined.Delete, null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.route_delete))
+                    }
+                } else {
+                    // Other's route: Clone to draft
+                    OutlinedButton(
+                        onClick = vm::cloneToDraft,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !uiState.isCloning
+                    ) {
+                        if (uiState.isCloning) {
+                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Outlined.ContentCopy, null, modifier = Modifier.size(18.dp))
+                        }
+                        Spacer(Modifier.width(6.dp))
+                        Text(stringResource(R.string.route_clone_draft))
+                    }
+                }
+
                 Spacer(Modifier.height(20.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(16.dp))
@@ -371,6 +450,28 @@ fun RouteDetailScreen(
                 Spacer(Modifier.height(80.dp))
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text(stringResource(R.string.route_delete_confirm)) },
+            text = { Text(stringResource(R.string.route_delete_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.deleteRoute()
+                    showDeleteDialog = false
+                    onBack()
+                }) {
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }
 

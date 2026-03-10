@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trail2.data.remote.ApiResult
 import com.trail2.data.remote.dto.GeoJsonLineStringDto
+import com.trail2.data.remote.dto.RouteUpdateDto
 import com.trail2.data.remote.dto.WaypointDto
 import com.trail2.data.repository.RouteRepository
 import com.trail2.data.repository.UploadRepository
@@ -56,7 +57,8 @@ data class RouteCreateUiState(
     val isSubmitting: Boolean = false,
     val isUploading: Boolean = false,
     val error: String? = null,
-    val createdRouteId: String? = null
+    val createdRouteId: String? = null,
+    val editingRouteId: String? = null
 )
 
 @HiltViewModel
@@ -70,6 +72,46 @@ class RouteCreateViewModel @Inject constructor(
 
     fun resetForm() {
         _uiState.value = RouteCreateUiState()
+    }
+
+    fun loadForEdit(routeId: String) {
+        viewModelScope.launch {
+            _uiState.value = RouteCreateUiState()
+            when (val result = routeRepository.getRouteById(routeId)) {
+                is ApiResult.Success -> {
+                    val route = result.data
+                    val wpEntries = route.waypoints?.map { wp ->
+                        WaypointEntry(
+                            point = com.yandex.mapkit.geometry.Point(wp.lat, wp.lng),
+                            name = wp.name,
+                            description = wp.description ?: ""
+                        )
+                    } ?: emptyList()
+                    _uiState.update {
+                        it.copy(
+                            editingRouteId = routeId,
+                            form = RouteCreateForm(
+                                title = route.title,
+                                description = route.description,
+                                region = route.region,
+                                difficulty = route.difficulty.name.lowercase(),
+                                durationMinutes = if (route.durationMinutes > 0) route.durationMinutes.toString() else "",
+                                tags = route.tags,
+                                photoUrls = route.photos,
+                                startLat = route.startLat,
+                                startLng = route.startLng,
+                                endLat = route.endLat,
+                                endLng = route.endLng,
+                                geometry = route.geometry?.coordinates ?: emptyList(),
+                                distanceKm = route.distanceKm,
+                                waypoints = wpEntries
+                            )
+                        )
+                    }
+                }
+                else -> {}
+            }
+        }
     }
 
     fun onTitleChange(v: String) = updateForm { copy(title = v) }
@@ -156,24 +198,49 @@ class RouteCreateViewModel @Inject constructor(
                     description = wp.description
                 )
             }
-            val result = routeRepository.createRoute(
-                title = form.title,
-                description = form.description.ifBlank { null },
-                region = form.region.ifBlank { null },
-                distanceKm = form.distanceKm,
-                elevationGainM = null,
-                durationMinutes = form.durationMinutes.toIntOrNull(),
-                difficulty = form.difficulty,
-                photos = form.photoUrls.ifEmpty { null },
-                tags = form.tags.ifEmpty { null },
-                status = if (asDraft) "draft" else "published",
-                startLat = form.startLat,
-                startLng = form.startLng,
-                endLat = form.endLat,
-                endLng = form.endLng,
-                geometry = GeoJsonLineStringDto("LineString", form.geometry),
-                waypoints = waypointDtos
-            )
+
+            val editId = _uiState.value.editingRouteId
+            val result = if (editId != null) {
+                routeRepository.updateRoute(
+                    routeId = editId,
+                    update = RouteUpdateDto(
+                        title = form.title,
+                        description = form.description.ifBlank { null },
+                        region = form.region.ifBlank { null },
+                        distanceKm = form.distanceKm,
+                        durationMinutes = form.durationMinutes.toIntOrNull(),
+                        difficulty = form.difficulty,
+                        photos = form.photoUrls.ifEmpty { null },
+                        tags = form.tags.ifEmpty { null },
+                        status = if (asDraft) "draft" else "published",
+                        startLat = form.startLat,
+                        startLng = form.startLng,
+                        endLat = form.endLat,
+                        endLng = form.endLng,
+                        geometry = GeoJsonLineStringDto("LineString", form.geometry),
+                        waypoints = waypointDtos
+                    )
+                )
+            } else {
+                routeRepository.createRoute(
+                    title = form.title,
+                    description = form.description.ifBlank { null },
+                    region = form.region.ifBlank { null },
+                    distanceKm = form.distanceKm,
+                    elevationGainM = null,
+                    durationMinutes = form.durationMinutes.toIntOrNull(),
+                    difficulty = form.difficulty,
+                    photos = form.photoUrls.ifEmpty { null },
+                    tags = form.tags.ifEmpty { null },
+                    status = if (asDraft) "draft" else "published",
+                    startLat = form.startLat,
+                    startLng = form.startLng,
+                    endLat = form.endLat,
+                    endLng = form.endLng,
+                    geometry = GeoJsonLineStringDto("LineString", form.geometry),
+                    waypoints = waypointDtos
+                )
+            }
             when (result) {
                 is ApiResult.Success -> {
                     _uiState.update { it.copy(isSubmitting = false, createdRouteId = result.data.id) }

@@ -24,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.trail2.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.FollowListType
+import com.trail2.data.RouteStatus
 import com.trail2.data.TrailRoute
 import com.trail2.onboarding.FitnessLevel
 import com.trail2.onboarding.OnboardingData
@@ -63,7 +64,8 @@ fun ProfileScreen(
     }
 
     var selectedTab by remember { mutableIntStateOf(0) }
-    val myRoutes = profileState.myRoutes
+    val publishedRoutes = profileState.myRoutes.filter { it.status != RouteStatus.DRAFT }
+    val draftRoutes = profileState.myRoutes.filter { it.status == RouteStatus.DRAFT }
     val savedRoutes = profileState.savedRoutes
 
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
@@ -191,7 +193,7 @@ fun ProfileScreen(
             }
         }
 
-        // Tabs: My Routes / Saved
+        // Tabs: My Routes / Saved / Drafts
         item {
             TabRow(selectedTabIndex = selectedTab) {
                 Tab(
@@ -206,19 +208,34 @@ fun ProfileScreen(
                     text = { Text(stringResource(R.string.profile_tab_saved)) },
                     icon = { Icon(Icons.Outlined.Bookmark, null, modifier = Modifier.size(18.dp)) }
                 )
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    text = { Text(stringResource(R.string.profile_tab_drafts)) },
+                    icon = { Icon(Icons.Outlined.Edit, null, modifier = Modifier.size(18.dp)) }
+                )
             }
         }
 
         // Routes content
-        val routes = if (selectedTab == 0) myRoutes else savedRoutes
+        val routes = when (selectedTab) {
+            0 -> publishedRoutes
+            1 -> savedRoutes
+            else -> draftRoutes
+        }
         if (routes.isEmpty()) {
             item {
+                val emptyText = when (selectedTab) {
+                    0 -> stringResource(R.string.profile_no_routes)
+                    1 -> stringResource(R.string.profile_no_saved)
+                    else -> stringResource(R.string.profile_no_drafts)
+                }
                 Box(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (selectedTab == 0) stringResource(R.string.profile_no_routes) else stringResource(R.string.profile_no_saved),
+                        text = emptyText,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )

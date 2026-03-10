@@ -112,8 +112,10 @@
     <string name="profile_logout_action">Log out</string>
     <string name="profile_tab_routes">Routes</string>
     <string name="profile_tab_saved">Saved</string>
+    <string name="profile_tab_drafts">Drafts</string>
     <string name="profile_no_routes">No routes yet</string>
     <string name="profile_no_saved">No saved routes</string>
+    <string name="profile_no_drafts">No drafts</string>
 
     <!-- Route Detail screen -->
     <string name="route_not_found">Route not found</string>
@@ -123,6 +125,16 @@
     <string name="route_unsubscribe">Unfollow</string>
     <string name="route_start_walking">Start walking</string>
     <string name="route_stop_walking">Finish</string>
+    <string name="route_edit">Edit</string>
+    <string name="route_clone_draft">Clone to draft</string>
+    <string name="route_publish">Publish</string>
+    <string name="route_draft_badge">Draft</string>
+    <string name="route_cloned">Route cloned to drafts</string>
+    <string name="route_edit_on_map">Edit on map</string>
+    <string name="route_delete">Delete route</string>
+    <string name="route_delete_confirm">Delete route?</string>
+    <string name="route_delete_message">The route will be permanently deleted.</string>
+    <string name="result_edit_route">Edit route</string>
     <string name="route_walking_title">Route navigation</string>
     <string name="route_no_map">Route map not available</string>
     <string name="route_comments_likes">%1$d comments · %2$d likes</string>
