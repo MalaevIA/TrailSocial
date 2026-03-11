@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.trail2.data.TrailRoute
 import com.trail2.data.User
 import com.trail2.data.remote.ApiResult
+import com.trail2.data.repository.AdminRepository
+import com.trail2.data.repository.ReportRepository
 import com.trail2.data.repository.RouteRepository
 import com.trail2.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,17 +23,31 @@ data class UserProfileUiState(
     val followers: List<User> = emptyList(),
     val following: List<User> = emptyList(),
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val isCurrentUserAdmin: Boolean = false,
+    val reportSent: Boolean = false,
+    val reportError: String? = null
 )
 
 @HiltViewModel
 class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
-    private val routeRepository: RouteRepository
+    private val routeRepository: RouteRepository,
+    private val reportRepository: ReportRepository,
+    private val adminRepository: AdminRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UserProfileUiState())
     val uiState: StateFlow<UserProfileUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            when (val result = userRepository.getMe()) {
+                is ApiResult.Success -> _uiState.update { it.copy(isCurrentUserAdmin = result.data.isAdmin) }
+                else -> {}
+            }
+        }
+    }
 
     fun loadUser(userId: String) {
         viewModelScope.launch {
@@ -86,6 +102,45 @@ class UserProfileViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = userRepository.getFollowing(userId)) {
                 is ApiResult.Success -> _uiState.update { it.copy(following = result.data.items) }
+                else -> {}
+            }
+        }
+    }
+
+    fun reportUser(reason: String, description: String?) {
+        val userId = _uiState.value.user?.id ?: return
+        viewModelScope.launch {
+            when (val result = reportRepository.createReport("user", userId, reason, description)) {
+                is ApiResult.Success -> _uiState.update { it.copy(reportSent = true, reportError = null) }
+                is ApiResult.Error -> {
+                    if (result.code == 409) {
+                        _uiState.update { it.copy(reportError = "already_sent") }
+                    }
+                }
+                else -> {}
+            }
+        }
+    }
+
+    fun clearReportState() {
+        _uiState.update { it.copy(reportSent = false, reportError = null) }
+    }
+
+    fun banUser() {
+        val userId = _uiState.value.user?.id ?: return
+        viewModelScope.launch {
+            when (val result = adminRepository.banUser(userId)) {
+                is ApiResult.Success -> _uiState.update { it.copy(user = result.data) }
+                else -> {}
+            }
+        }
+    }
+
+    fun unbanUser() {
+        val userId = _uiState.value.user?.id ?: return
+        viewModelScope.launch {
+            when (val result = adminRepository.unbanUser(userId)) {
+                is ApiResult.Success -> _uiState.update { it.copy(user = result.data) }
                 else -> {}
             }
         }
