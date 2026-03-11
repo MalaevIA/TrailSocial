@@ -1,0 +1,60 @@
+@startuml TrailSocial_RouteBuilder_State
+!theme plain
+title AI Route Builder - State Diagram
+
+skinparam state {
+    BackgroundColor #FFFBF5
+    BorderColor #2D6A4F
+}
+
+[*] --> GOAL
+
+state "Form Steps" as FormSteps {
+    state "GOAL\n(цель, тип группы)" as GOAL
+    state "PARAMS\n(длительность, дистанция)" as PARAMS
+    state "TERRAIN\n(тип местности)" as TERRAIN
+    state "DETAILS\n(старт, пожелания)" as DETAILS
+    state "EXTRAS\n(питомцы, кафе, WC)" as EXTRAS
+
+    GOAL --> PARAMS : nextStep()
+    PARAMS --> TERRAIN : nextStep()
+    TERRAIN --> DETAILS : nextStep()
+    DETAILS --> EXTRAS : nextStep()
+
+    EXTRAS --> DETAILS : prevStep()
+    DETAILS --> TERRAIN : prevStep()
+    TERRAIN --> PARAMS : prevStep()
+    PARAMS --> GOAL : prevStep()
+}
+
+state "ScreenState" as SS {
+    state "Form" as FormState
+    state "Loading\n(pollCount)" as LoadingState
+    state "Result\n(GeneratedRoute)" as ResultState
+    state "Error\n(message)" as ErrorState
+}
+
+EXTRAS --> LoadingState : generate()
+FormSteps --> FormState : screenState = Form
+
+LoadingState --> LoadingState : onPollProgress\n(pollCount++)
+LoadingState --> ResultState : status = "completed"
+LoadingState --> ErrorState : status = "failed"\nor timeout (5 min)
+
+ErrorState --> EXTRAS : "Попробовать снова"
+ResultState --> [*] : publish / back\n(resetFully)
+
+note right of LoadingState
+  Poll каждые 2 секунды
+  GET /ai/tasks/{taskId}
+  Максимум 5 минут
+end note
+
+note right of ResultState
+  Показ RouteResultScreen:
+  - Карта с точками
+  - Кнопка "Опубликовать"
+  - Кнопка "Сохранить"
+end note
+
+@enduml

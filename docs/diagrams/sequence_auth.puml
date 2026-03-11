@@ -1,0 +1,71 @@
+@startuml TrailSocial_Auth_Sequence
+!theme plain
+title Аутентификация - Sequence Diagram
+
+actor User
+participant "LoginScreen" as LS
+participant "AuthViewModel" as AVM
+participant "AuthRepository" as AR
+participant "AuthApi\n(Retrofit)" as API
+participant "TokenManager\n(Encrypted)" as TM
+participant "AppNavigation" as Nav
+database "Backend API" as BE
+
+== Регистрация (через Onboarding) ==
+
+User -> LS : Ввод email, password,\nusername, displayName
+LS -> AVM : signup(username, email,\npassword, displayName)
+AVM -> AR : signup(...)
+AR -> API : POST /auth/signup\n(SignupRequest)
+API -> BE : HTTP POST
+BE --> API : 201 TokenResponse\n{access_token, refresh_token}
+API --> AR : Response<TokenResponse>
+AR -> TM : saveTokens(access, refresh)
+TM -> TM : EncryptedSharedPreferences\n.edit().putString(...)
+AR --> AVM : ApiResult.Success
+AVM -> AVM : isLoggedIn = true
+Nav -> Nav : observes isLoggedIn\n→ MainAppContent()
+
+== Вход ==
+
+User -> LS : Ввод email, password
+LS -> AVM : login(email, password)
+AVM -> AVM : _uiState.update\n{ isLoading = true }
+AVM -> AR : login(email, password)
+AR -> AR : safeApiCall { ... }
+AR -> API : POST /auth/login\n(LoginRequest)
+API -> BE : HTTP POST
+BE --> API : 200 TokenResponse
+API --> AR : Response<TokenResponse>
+AR -> TM : saveTokens(access, refresh)
+AR --> AVM : ApiResult.Success
+AVM -> AVM : isLoggedIn = true
+AVM -> AVM : _uiState.update\n{ isLoading = false }
+Nav -> Nav : observes isLoggedIn\n→ MainAppContent()
+
+== Ошибка входа ==
+
+User -> LS : Неверные данные
+LS -> AVM : login(email, password)
+AVM -> AR : login(email, password)
+AR -> API : POST /auth/login
+API -> BE : HTTP POST
+BE --> API : 401 {"detail": "Invalid credentials"}
+API --> AR : HttpException(401)
+AR -> AR : safeApiCall catches\n→ parses error JSON
+AR --> AVM : ApiResult.Error(401, "Invalid credentials")
+AVM -> AVM : _uiState.update\n{ error = "..." }
+LS -> User : Показать ошибку
+
+== Выход ==
+
+User -> LS : Нажать "Выйти"
+LS -> AVM : logout()
+AVM -> AR : logout()
+AR -> API : POST /auth/logout
+AR -> TM : clearTokens()
+TM -> TM : EncryptedSharedPreferences\n.edit().clear()
+AVM -> AVM : isLoggedIn = false
+Nav -> Nav : observes isLoggedIn\n→ LoginScreen
+
+@enduml

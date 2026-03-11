@@ -1,0 +1,201 @@
+@startuml TrailSocial_Component_Diagram
+!theme plain
+title TrailSocial - Component Diagram
+
+skinparam component {
+    BackgroundColor #F5F5F5
+    BorderColor #2D6A4F
+}
+skinparam package {
+    BackgroundColor #FFFBF5
+    BorderColor #774936
+}
+
+package "Presentation Layer" {
+    package "Screens" {
+        [FeedScreen]
+        [ExploreScreen]
+        [RouteBuilderScreen]
+        [RouteResultScreen]
+        [RouteCreateScreen]
+        [RouteMapPickerScreen]
+        [RouteDetailScreen]
+        [ProfileScreen]
+        [UserProfileScreen]
+        [LoginScreen]
+        [OnboardingScreens]
+        [NotificationsScreen]
+        [SettingsScreen]
+        [AdminPanelScreen]
+    }
+
+    package "ViewModels" {
+        [FeedViewModel]
+        [ExploreViewModel]
+        [RouteBuilderViewModel]
+        [RouteDetailViewModel]
+        [RouteCreateViewModel]
+        [ProfileViewModel]
+        [AuthViewModel]
+        [OnboardingViewModel]
+        [NotificationViewModel]
+        [SettingsViewModel]
+        [AdminViewModel]
+    }
+
+    [Navigation.kt\n(State Machine)] as Nav
+}
+
+package "Domain Layer" {
+    package "Models" {
+        [TrailRoute]
+        [User]
+        [Comment]
+        [Notification]
+        [Report]
+    }
+    package "Enums" {
+        [Difficulty]
+        [RouteStatus]
+        [NotificationType]
+        [ReportReason]
+    }
+}
+
+package "Data Layer" {
+    package "Repositories" {
+        [AuthRepository]
+        [RouteRepository]
+        [UserRepository]
+        [CommentRepository]
+        [NotificationRepository]
+        [RouteBuilderRepository]
+        [UploadRepository]
+        [ReportRepository]
+        [AdminRepository]
+        [OnboardingRepository]
+        [SettingsRepository]
+    }
+
+    package "Remote (API)" {
+        [AuthApi]
+        [RouteApi]
+        [UserApi]
+        [CommentApi]
+        [NotificationApi]
+        [AiRouteApi]
+        [UploadApi]
+        [ReportApi]
+        [AdminApi]
+    }
+
+    package "DTO & Mappers" {
+        [DTOs]
+        [DtoMappers]
+        [ApiResult<T>]
+        [safeApiCall()]
+    }
+
+    package "Local Storage" {
+        [TokenManager\n(EncryptedSharedPreferences)]
+        [DataStore<Preferences>\n(Onboarding/Settings)]
+    }
+}
+
+package "DI (Hilt)" {
+    [NetworkModule]
+    [AuthModule]
+    [DataStoreModule]
+}
+
+package "Network Layer" {
+    [OkHttpClient]
+    [Retrofit]
+    [AuthInterceptor]
+    [TokenAuthenticator]
+}
+
+package "External" {
+    [Yandex MapKit\n(Maps, Suggest, Router)]
+    cloud "Backend API\n(Django REST)" as Backend
+}
+
+' --- Connections ---
+
+' Screens -> ViewModels
+FeedScreen --> FeedViewModel
+ExploreScreen --> ExploreViewModel
+RouteBuilderScreen --> RouteBuilderViewModel
+RouteResultScreen --> RouteBuilderViewModel
+RouteDetailScreen --> RouteDetailViewModel
+RouteCreateScreen --> RouteCreateViewModel
+RouteMapPickerScreen ..> Nav : "onRouteSelected\ncallback"
+ProfileScreen --> ProfileViewModel
+LoginScreen --> AuthViewModel
+OnboardingScreens --> OnboardingViewModel
+NotificationsScreen --> NotificationViewModel
+SettingsScreen --> SettingsViewModel
+AdminPanelScreen --> AdminViewModel
+
+' ViewModels -> Repositories
+FeedViewModel --> RouteRepository
+ExploreViewModel --> RouteRepository
+RouteBuilderViewModel --> RouteBuilderRepository
+RouteDetailViewModel --> RouteRepository
+RouteDetailViewModel --> CommentRepository
+RouteDetailViewModel --> ReportRepository
+RouteCreateViewModel --> RouteRepository
+RouteCreateViewModel --> UploadRepository
+ProfileViewModel --> UserRepository
+AuthViewModel --> AuthRepository
+OnboardingViewModel --> OnboardingRepository
+OnboardingViewModel --> AuthRepository
+NotificationViewModel --> NotificationRepository
+AdminViewModel --> AdminRepository
+AdminViewModel --> ReportRepository
+
+' Repositories -> API
+AuthRepository --> AuthApi
+RouteRepository --> RouteApi
+UserRepository --> UserApi
+CommentRepository --> CommentApi
+NotificationRepository --> NotificationApi
+RouteBuilderRepository --> AiRouteApi
+UploadRepository --> UploadApi
+ReportRepository --> ReportApi
+AdminRepository --> AdminApi
+
+' Repositories -> Local
+AuthRepository --> TokenManager
+OnboardingRepository --> [DataStore<Preferences>\n(Onboarding/Settings)]
+SettingsRepository --> [DataStore<Preferences>\n(Onboarding/Settings)]
+
+' API -> Network
+AuthApi --> Retrofit
+RouteApi --> Retrofit
+Retrofit --> OkHttpClient
+OkHttpClient --> AuthInterceptor
+OkHttpClient --> TokenAuthenticator
+AuthInterceptor --> TokenManager : "reads token"
+TokenAuthenticator --> TokenManager : "refresh/clear"
+
+' Network -> External
+OkHttpClient --> Backend
+
+' DI wiring
+NetworkModule ..> OkHttpClient : "provides"
+NetworkModule ..> Retrofit : "provides"
+AuthModule ..> TokenManager : "provides"
+DataStoreModule ..> [DataStore<Preferences>\n(Onboarding/Settings)] : "provides"
+
+' DTO mapping
+DTOs --> DtoMappers
+DtoMappers --> TrailRoute
+DtoMappers --> User
+DtoMappers --> Comment
+
+' MapKit
+RouteMapPickerScreen --> [Yandex MapKit\n(Maps, Suggest, Router)]
+RouteDetailScreen --> [Yandex MapKit\n(Maps, Suggest, Router)]
+
+@enduml

@@ -1,0 +1,167 @@
+@startuml TrailSocial_Class_Diagram
+!theme plain
+title Доменные модели - Class Diagram
+
+skinparam class {
+    BackgroundColor #FFFBF5
+    BorderColor #2D6A4F
+    HeaderBackgroundColor #2D6A4F
+    HeaderFontColor white
+}
+
+enum Difficulty {
+    EASY
+    MODERATE
+    HARD
+    EXPERT
+}
+
+enum RouteStatus {
+    DRAFT
+    PRIVATE
+    PUBLISHED
+}
+
+enum NotificationType {
+    NEW_FOLLOWER
+    ROUTE_LIKE
+    NEW_COMMENT
+    NEW_ROUTE
+}
+
+enum ReportReason {
+    SPAM
+    HARASSMENT
+    INAPPROPRIATE
+    MISINFORMATION
+    OTHER
+}
+
+enum ReportStatus {
+    PENDING
+    REVIEWED
+    DISMISSED
+}
+
+class User {
+    + id: Int
+    + name: String
+    + username: String
+    + avatarUrl: String?
+    + bio: String?
+    + followersCount: Int
+    + followingCount: Int
+    + routesCount: Int
+    + isFollowing: Boolean
+    + createdAt: String
+    + isAdmin: Boolean
+    + isActive: Boolean
+}
+
+class TrailRoute {
+    + id: Int
+    + author: User
+    + title: String
+    + description: String?
+    + photos: List<String>
+    + distanceKm: Double
+    + elevationGainM: Int?
+    + durationMinutes: Int
+    + difficulty: Difficulty
+    + region: String?
+    + tags: List<String>
+    + likesCount: Int
+    + commentsCount: Int
+    + savesCount: Int
+    + isLiked: Boolean
+    + isSaved: Boolean
+    + createdAt: String
+    + status: RouteStatus
+    + startLat: Double?
+    + startLng: Double?
+    + endLat: Double?
+    + endLng: Double?
+    + geometry: List<List<Double>>?
+    + waypoints: List<Waypoint>
+}
+
+class Waypoint {
+    + lat: Double
+    + lng: Double
+    + name: String
+    + description: String?
+    + orderIndex: Int
+}
+
+class Comment {
+    + id: Int
+    + author: User
+    + text: String
+    + createdAt: String
+    + likesCount: Int
+    + isLiked: Boolean
+    + routeId: Int
+}
+
+class Notification {
+    + id: Int
+    + type: NotificationType
+    + isRead: Boolean
+    + createdAt: String
+    + actor: User?
+    + routeId: Int?
+    + routeTitle: String?
+    + commentId: Int?
+    + commentText: String?
+}
+
+class Report {
+    + id: Int
+    + reporterId: Int
+    + targetType: String
+    + targetId: Int
+    + reason: ReportReason
+    + description: String?
+    + status: ReportStatus
+    + createdAt: String
+}
+
+class GeneratedRoute {
+    + title: String
+    + description: String
+    + points: List<RoutePoint>
+    + distanceKm: Double
+    + durationMinutes: Int
+    + difficulty: Difficulty
+    + region: String?
+    + tags: List<String>
+}
+
+class RoutePoint {
+    + lat: Double
+    + lng: Double
+    + name: String
+    + description: String?
+    + orderIndex: Int
+}
+
+' --- Relationships ---
+
+TrailRoute "1" *-- "0..*" Waypoint : contains
+TrailRoute --> Difficulty : has
+TrailRoute --> RouteStatus : has
+TrailRoute "1" --> "1" User : author
+
+Comment "0..*" --> "1" User : author
+Comment "0..*" --> "1" TrailRoute : belongs to
+
+Notification --> NotificationType : type
+Notification "0..*" --> "0..1" User : actor
+
+Report --> ReportReason : reason
+Report --> ReportStatus : status
+
+GeneratedRoute "1" *-- "0..*" RoutePoint : contains
+GeneratedRoute --> Difficulty : has
+
+@enduml

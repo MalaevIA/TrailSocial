@@ -1,0 +1,98 @@
+@startuml TrailSocial_AI_Route_Generation
+!theme plain
+title Генерация AI-маршрута - Sequence Diagram
+
+actor User
+participant "RouteBuilderScreen\n(5 шагов)" as RBS
+participant "RouteBuilderViewModel" as RBVM
+participant "RouteBuilderRepository" as RBR
+participant "AiRouteApi" as API
+participant "RouteResultScreen" as RRS
+participant "RouteResultViewModel" as RRVM
+participant "RouteRepository" as RR
+database "Backend API" as BE
+
+== Заполнение формы (5 шагов) ==
+
+User -> RBS : Шаг 1: GOAL\n(цель, тип группы)
+RBS -> RBVM : setPurpose("hiking")\nsetGroupType("solo")
+
+User -> RBS : Шаг 2: PARAMS\n(длительность, дистанция)
+RBS -> RBVM : setDuration(120)\nsetDistance(10.0)
+
+User -> RBS : Шаг 3: TERRAIN\n(лес, горы, город...)
+RBS -> RBVM : toggleTerrain("forest")
+
+User -> RBS : Шаг 4: DETAILS\n(точка старта, пожелания)
+RBS -> RBVM : setStartPoint("Парк Горького")\nsetMustSeeWishes("река")
+
+User -> RBS : Шаг 5: EXTRAS\n(питомцы, кафе, WC)
+RBS -> RBVM : setHasPets(true)
+
+== Генерация маршрута ==
+
+User -> RBS : Нажать "Сгенерировать"
+RBS -> RBVM : generate()
+RBVM -> RBVM : screenState =\nLoading(pollCount = 0)
+
+RBVM -> RBR : generateRoute(form,\nonPollProgress)
+RBR -> RBR : form.toApiRequest()\n→ AiGenerateRequestDto
+RBR -> API : POST /ai/generate-route\n(AiGenerateRequestDto)
+API -> BE : HTTP POST
+BE --> API : 202 {task_id: "abc-123"}
+API --> RBR : AiTaskCreatedDto
+
+== Polling цикл ==
+
+loop каждые 2 секунды (макс 5 минут)
+    RBR -> API : GET /ai/tasks/abc-123
+    API -> BE : HTTP GET
+    BE --> API : {status: "pending",\nprogress: 30}
+    API --> RBR : AiTaskStatusDto
+    RBR -> RBVM : onPollProgress(pollCount++)
+    RBVM -> RBVM : screenState =\nLoading(pollCount)
+    RBS -> User : Анимация загрузки\n+ счётчик прогресса
+    RBR -> RBR : delay(2000ms)
+end
+
+RBR -> API : GET /ai/tasks/abc-123
+API -> BE : HTTP GET
+BE --> API : {status: "completed",\nroute: {...}}
+API --> RBR : AiTaskStatusDto\n(с GeneratedRouteDto)
+
+RBR -> RBR : route.toDomain()\n→ GeneratedRoute
+RBR --> RBVM : GeneratedRoute
+
+RBVM -> RBVM : screenState =\nResult(generatedRoute)
+
+== Отображение результата ==
+
+RBS -> RRS : Navigation:\nScreen.AIRouteResult(route)
+RRS -> User : Карта + точки маршрута\n+ RoutePointCard'ы
+
+== Публикация маршрута ==
+
+User -> RRS : Нажать "Опубликовать"
+RRS -> RRVM : publishRoute()
+RRVM -> RR : createRoute(\nCreateRouteRequest)
+RR -> BE : POST /routes
+BE --> RR : 201 RouteResponse
+RR --> RRVM : ApiResult.Success
+RRVM -> RRVM : isPublished = true
+RRS -> User : "Маршрут опубликован!"
+
+== Ошибка генерации ==
+
+note over RBR, BE
+  Альтернативный сценарий:
+  status: "failed" → Exception
+end note
+
+RBR -> API : GET /ai/tasks/abc-123
+BE --> API : {status: "failed",\nerror: "Не удалось построить"}
+RBR -> RBR : throw Exception(error)
+RBR --> RBVM : Exception
+RBVM -> RBVM : screenState =\nError("Не удалось построить")
+RBS -> User : Показать ошибку\n+ кнопка "Попробовать снова"
+
+@enduml

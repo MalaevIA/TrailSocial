@@ -1,0 +1,82 @@
+@startuml TrailSocial_Feed_Interaction
+!theme plain
+title Лента маршрутов (Feed) - Sequence Diagram
+
+actor User
+participant "FeedScreen" as FS
+participant "FeedViewModel" as FVM
+participant "RouteRepository" as RR
+participant "RouteApi" as API
+database "Backend API" as BE
+
+== Загрузка ленты ==
+
+FS -> FVM : LaunchedEffect(Unit)\n→ loadRoutes()
+FVM -> FVM : _uiState.update\n{ isLoading = true }
+FVM -> RR : getFeed(page=1, pageSize=20)
+RR -> RR : safeApiCall { ... }
+RR -> API : GET /feed?page=1&page_size=20
+API -> BE : HTTP GET
+BE --> API : PaginatedResponseDto<RouteDto>\n{items, total, page, pages}
+API --> RR : Response
+RR -> RR : items.map { it.toDomain() }
+RR --> FVM : ApiResult.Success(\nPaginatedResponse<TrailRoute>)
+FVM -> FVM : _uiState.update {\nroutes = data.items,\nhasMore = page < pages,\nisLoading = false }
+FS -> User : Показать карточки маршрутов
+
+== Бесконечная прокрутка ==
+
+User -> FS : Прокрутка до конца списка
+FS -> FVM : loadMore()
+FVM -> FVM : if !isLoading && hasMore
+FVM -> RR : getFeed(page=2, pageSize=20)
+RR -> BE : GET /feed?page=2&page_size=20
+BE --> RR : Следующая страница
+RR --> FVM : ApiResult.Success
+FVM -> FVM : _uiState.update {\nroutes += newItems,\npage = 2 }
+
+== Фильтрация по сложности ==
+
+User -> FS : Выбрать фильтр "Сложные"
+FS -> FVM : setFilter(Difficulty.HARD)
+FVM -> FVM : _uiState.update {\nselectedDifficulty = HARD,\npage = 1 }
+FVM -> RR : getFeed(page=1,\ndifficulty="hard")
+RR -> BE : GET /feed?page=1\n&difficulty=hard
+BE --> RR : Фильтрованные маршруты
+RR --> FVM : ApiResult.Success
+FVM -> FVM : _uiState.update {\nroutes = filtered }
+
+== Лайк маршрута ==
+
+User -> FS : Нажать сердечко\nна карточке
+FS -> FVM : toggleLike(routeId=42)
+FVM -> FVM : Optimistic update:\nroutes[42].isLiked = true\nlikesCount + 1
+FVM -> RR : likeRoute(42)
+RR -> API : POST /routes/42/like
+API -> BE : HTTP POST
+BE --> API : 200 OK
+
+alt Ошибка API
+    BE --> API : 4xx/5xx
+    API --> RR : HttpException
+    RR --> FVM : ApiResult.Error
+    FVM -> FVM : Revert:\nroutes[42].isLiked = false\nlikesCount - 1
+end
+
+== Сохранение маршрута ==
+
+User -> FS : Нажать закладку
+FS -> FVM : toggleSave(routeId=42)
+FVM -> FVM : Optimistic update:\nisSaved = true
+FVM -> RR : saveRoute(42)
+RR -> API : POST /routes/42/save
+API -> BE : HTTP POST
+BE --> API : 200 OK
+
+== Переход к деталям ==
+
+User -> FS : Тап на карточку
+FS -> FS : onRouteClick(routeId)
+FS -> FS : Navigation:\ncurrentScreen =\nScreen.RouteDetail(42)
+
+@enduml

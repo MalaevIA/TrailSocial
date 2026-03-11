@@ -1,0 +1,203 @@
+@startuml TrailSocial_ViewModel_Class_Diagram
+!theme plain
+title ViewModels и зависимости - Class Diagram
+
+skinparam class {
+    BackgroundColor #FFFBF5
+    BorderColor #2D6A4F
+    HeaderBackgroundColor #2D6A4F
+    HeaderFontColor white
+}
+
+skinparam package {
+    BackgroundColor white
+    BorderColor #774936
+}
+
+package "ViewModels" {
+
+    class AuthViewModel <<@HiltViewModel>> {
+        - authRepository: AuthRepository
+        - tokenManager: TokenManager
+        + isLoggedIn: StateFlow<Boolean>
+        + uiState: StateFlow<AuthUiState>
+        --
+        + login(email, password)
+        + logout()
+    }
+
+    class FeedViewModel <<@HiltViewModel>> {
+        - routeRepository: RouteRepository
+        - tokenManager: TokenManager
+        + uiState: StateFlow<FeedUiState>
+        --
+        + loadRoutes()
+        + loadMore()
+        + setFilter(difficulty)
+        + toggleLike(routeId)
+        + toggleSave(routeId)
+    }
+
+    class ExploreViewModel <<@HiltViewModel>> {
+        - routeRepository: RouteRepository
+        + uiState: StateFlow<ExploreUiState>
+        --
+        + searchRoutes(query)
+        + searchUsers(query)
+        + getRegions()
+    }
+
+    class RouteDetailViewModel <<@HiltViewModel>> {
+        - routeRepository: RouteRepository
+        - commentRepository: CommentRepository
+        - userRepository: UserRepository
+        - reportRepository: ReportRepository
+        - adminRepository: AdminRepository
+        + uiState: StateFlow<RouteDetailUiState>
+        --
+        + loadRoute(routeId)
+        + loadComments()
+        + sendComment(text)
+        + toggleLike()
+        + toggleSave()
+        + deleteRoute()
+        + cloneRoute()
+        + createReport(reason, desc)
+        + startNavigation()
+        + stopNavigation()
+    }
+
+    class RouteCreateViewModel <<@HiltViewModel>> {
+        - routeRepository: RouteRepository
+        - uploadRepository: UploadRepository
+        + uiState: StateFlow<RouteCreateUiState>
+        --
+        + resetForm()
+        + loadForEdit(routeId)
+        + setRouteCoordinates(data)
+        + uploadPhoto(file)
+        + removePhoto(index)
+        + submit(asDraft: Boolean)
+    }
+
+    class RouteBuilderViewModel <<@HiltViewModel>> {
+        - routeBuilderRepository: RouteBuilderRepository
+        + state: StateFlow<RouteBuilderState>
+        --
+        + nextStep()
+        + prevStep()
+        + generate()
+        + resetFully()
+        + setPurpose(value)
+        + setGroupType(value)
+        + setDuration(value)
+        + setDistance(value)
+        + toggleTerrain(value)
+        + setStartPoint(value)
+        + setMustSeeWishes(value)
+        + setHasPets(value)
+    }
+
+    class ProfileViewModel <<@HiltViewModel>> {
+        - userRepository: UserRepository
+        + uiState: StateFlow<ProfileUiState>
+        --
+        + getProfile()
+        + updateProfile(name, bio, avatar)
+    }
+
+    class OnboardingViewModel <<@HiltViewModel>> {
+        - onboardingRepository: OnboardingRepository
+        - authRepository: AuthRepository
+        + uiState: StateFlow<OnboardingUiState>
+        + isOnboardingCompleted: StateFlow<Boolean?>
+        --
+        + nextStep()
+        + prevStep()
+        + finishOnboarding()
+        + skipOnboarding()
+    }
+
+    class NotificationViewModel <<@HiltViewModel>> {
+        - notificationRepository: NotificationRepository
+        + uiState: StateFlow<NotificationUiState>
+        --
+        + getNotifications()
+        + markRead(id)
+        + markAllRead()
+    }
+
+    class AdminViewModel <<@HiltViewModel>> {
+        - adminRepository: AdminRepository
+        - reportRepository: ReportRepository
+        + uiState: StateFlow<AdminUiState>
+        --
+        + getUsers()
+        + banUser(userId)
+        + unbanUser(userId)
+        + getReports()
+        + updateReportStatus(id, status)
+    }
+
+    class SettingsViewModel <<@HiltViewModel>> {
+        - settingsRepository: SettingsRepository
+        + isDarkTheme: StateFlow<Boolean>
+        + language: StateFlow<String>
+        --
+        + toggleDarkTheme()
+        + setLanguage(lang)
+    }
+}
+
+package "Repositories" {
+    class AuthRepository
+    class RouteRepository
+    class UserRepository
+    class CommentRepository
+    class NotificationRepository
+    class RouteBuilderRepository
+    class UploadRepository
+    class ReportRepository
+    class AdminRepository
+    class OnboardingRepository
+    class SettingsRepository
+}
+
+package "Auth" {
+    class TokenManager
+}
+
+' --- Dependencies ---
+
+AuthViewModel --> AuthRepository
+AuthViewModel --> TokenManager
+
+FeedViewModel --> RouteRepository
+FeedViewModel --> TokenManager
+
+ExploreViewModel --> RouteRepository
+
+RouteDetailViewModel --> RouteRepository
+RouteDetailViewModel --> CommentRepository
+RouteDetailViewModel --> UserRepository
+RouteDetailViewModel --> ReportRepository
+RouteDetailViewModel --> AdminRepository
+
+RouteCreateViewModel --> RouteRepository
+RouteCreateViewModel --> UploadRepository
+
+RouteBuilderViewModel --> RouteBuilderRepository
+
+ProfileViewModel --> UserRepository
+
+OnboardingViewModel --> OnboardingRepository
+OnboardingViewModel --> AuthRepository
+
+NotificationViewModel --> NotificationRepository
+
+AdminViewModel --> AdminRepository
+AdminViewModel --> ReportRepository
+
+SettingsViewModel --> SettingsRepository
+
+@enduml

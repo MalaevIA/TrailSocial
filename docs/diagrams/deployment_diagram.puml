@@ -1,0 +1,63 @@
+@startuml TrailSocial_Deployment
+!theme plain
+title TrailSocial - Deployment Diagram
+
+skinparam node {
+    BackgroundColor #FFFBF5
+    BorderColor #2D6A4F
+}
+
+node "Android Device" as device {
+    artifact "TrailSocial.apk" as apk {
+        component "Jetpack Compose UI" as ui
+        component "Hilt DI Container" as hilt
+        component "OkHttp + Retrofit" as http
+        component "TokenManager\n(EncryptedSharedPrefs)" as token
+        component "DataStore\n(Preferences)" as ds
+        component "Yandex MapKit SDK" as mapkit
+    }
+}
+
+node "Android Emulator\n(10.0.2.2)" as emulator {
+    node "Django Backend" as backend {
+        component "Django REST Framework" as drf
+        component "JWT Auth\n(SimpleJWT)" as jwt
+        component "AI Route Service" as ai_service
+        database "PostgreSQL" as db
+        storage "Media Storage\n(Images)" as media
+    }
+}
+
+cloud "Yandex Cloud" as yandex {
+    component "MapKit API\n(Maps, Tiles)" as mapapi
+    component "Geocoder API\n(Suggest, Search)" as geocoder
+    component "Pedestrian Router API" as router
+}
+
+' Connections
+ui --> hilt : injection
+hilt --> http
+hilt --> token
+hilt --> ds
+ui --> mapkit
+
+http --> drf : HTTP/REST\nBase URL:\nhttp://10.0.2.2:8000/api/v1/
+note on link
+  JSON (kotlinx.serialization)
+  Auth: Bearer JWT
+  Timeout: 30s/120s/60s
+end note
+
+drf --> jwt : auth check
+drf --> db : queries
+drf --> media : file upload
+drf --> ai_service : route generation
+
+mapkit --> mapapi : map tiles
+mapkit --> geocoder : address suggest
+mapkit --> router : pedestrian routing
+note on link
+  API Key: BuildConfig.\nYANDEX_MAPKIT_KEY
+end note
+
+@enduml

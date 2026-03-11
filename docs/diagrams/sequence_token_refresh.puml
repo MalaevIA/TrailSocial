@@ -1,0 +1,85 @@
+@startuml TrailSocial_Token_Refresh
+!theme plain
+title Обновление токена (Token Refresh) - Sequence Diagram
+
+participant "Any Screen" as Screen
+participant "ViewModel" as VM
+participant "Repository" as Repo
+participant "OkHttpClient" as OkHttp
+participant "AuthInterceptor" as AI
+participant "TokenManager" as TM
+participant "TokenAuthenticator" as TA
+participant "AuthApi" as AuthAPI
+database "Backend API" as BE
+
+== Обычный запрос с валидным токеном ==
+
+Screen -> VM : action()
+VM -> Repo : fetchData()
+Repo -> OkHttp : GET /routes
+OkHttp -> AI : intercept(chain)
+AI -> TM : getAccessToken()
+TM --> AI : "eyJhbG..."
+AI -> AI : request.newBuilder()\n.header("Authorization",\n"Bearer eyJhbG...")
+AI -> BE : HTTP request + Bearer token
+BE --> OkHttp : 200 OK + data
+OkHttp --> Repo : Response
+Repo --> VM : ApiResult.Success(data)
+
+== Токен истёк → автоматическое обновление ==
+
+Screen -> VM : action()
+VM -> Repo : fetchData()
+Repo -> OkHttp : GET /routes
+OkHttp -> AI : intercept(chain)
+AI -> TM : getAccessToken()
+TM --> AI : "expired_token"
+AI -> BE : HTTP request + expired token
+BE --> OkHttp : **401 Unauthorized**
+
+OkHttp -> TA : authenticate(route, response)
+note right of TA : responseCount < 2\n→ можно retry
+
+TA -> TM : getRefreshToken()
+TM --> TA : "refresh_token_value"
+
+TA -> AuthAPI : POST /auth/refresh\n{refresh_token}
+AuthAPI -> BE : HTTP POST
+BE --> AuthAPI : 200 {new_access, new_refresh}
+AuthAPI --> TA : TokenResponse
+
+TA -> TM : saveTokens(\nnew_access, new_refresh)
+
+TA -> TA : response.request\n.newBuilder()\n.header("Authorization",\n"Bearer new_access")
+TA --> OkHttp : Retried request
+
+OkHttp -> BE : Original request\n+ new token
+BE --> OkHttp : 200 OK + data
+OkHttp --> Repo : Response
+Repo --> VM : ApiResult.Success(data)
+
+== Refresh token тоже истёк → выход ==
+
+Screen -> VM : action()
+VM -> Repo : fetchData()
+Repo -> OkHttp : GET /routes
+BE --> OkHttp : **401 Unauthorized**
+
+OkHttp -> TA : authenticate(route, response)
+TA -> TM : getRefreshToken()
+TM --> TA : "expired_refresh"
+
+TA -> AuthAPI : POST /auth/refresh
+AuthAPI -> BE : HTTP POST
+BE --> AuthAPI : **401 Unauthorized**
+
+TA -> TM : clearTokens()
+note right of TM : isLoggedIn\nemits false
+
+TA --> OkHttp : return null\n(no retry)
+OkHttp --> Repo : 401 Response
+Repo --> VM : ApiResult.Error(401)
+
+note over Screen : AppNavigation\nobserves isLoggedIn = false\n→ LoginScreen
+
+@enduml

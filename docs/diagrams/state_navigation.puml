@@ -1,0 +1,94 @@
+@startuml TrailSocial_Navigation_State
+!theme plain
+title Навигация приложения - State Diagram
+
+skinparam state {
+    BackgroundColor #FFFBF5
+    BorderColor #2D6A4F
+}
+
+[*] --> Splash : App Launch
+
+state "Auth Check" as AuthCheck {
+    Splash --> CheckOnboarding : isOnboardingCompleted\nobserved
+    CheckOnboarding --> Onboarding : null or false
+    CheckOnboarding --> CheckLogin : true
+    CheckLogin --> Login : isLoggedIn = false
+    CheckLogin --> MainApp : isLoggedIn = true
+}
+
+state "Onboarding Flow" as Onboarding {
+    state "Welcome" as OB1
+    state "City" as OB2
+    state "Fitness" as OB3
+    state "Interests" as OB4
+    state "Profile + Signup" as OB5
+
+    OB1 --> OB2 : next
+    OB2 --> OB3 : next
+    OB3 --> OB4 : next
+    OB4 --> OB5 : next
+    OB5 --> Login : signup success\n→ isOnboardingCompleted = true
+    OB1 --> Login : skip
+}
+
+Login --> MainApp : login success\n(isLoggedIn = true)
+
+state "MainApp (Scaffold)" as MainApp {
+    state "Bottom Navigation Tabs" as Tabs {
+        state "Feed" as TabFeed
+        state "Explore" as TabExplore
+        state "AI-Route" as TabAI
+        state "Profile" as TabProfile
+
+        TabFeed --> TabExplore
+        TabExplore --> TabFeed
+        TabFeed --> TabAI
+        TabAI --> TabFeed
+        TabFeed --> TabProfile
+        TabProfile --> TabFeed
+        TabExplore --> TabAI
+        TabAI --> TabProfile
+        TabProfile --> TabExplore
+    }
+
+    state "Non-Tab Screens\n(early return\nbefore Scaffold)" as NonTab {
+        state "RouteDetail(routeId)" as RD
+        state "RouteCreate" as RC
+        state "RouteMapPicker" as RMP
+        state "RouteEdit(routeId)" as RE
+        state "AIRouteResult(route)" as ARR
+        state "UserProfile(userId)" as UP
+        state "Notifications" as Notif
+        state "Settings" as Set
+        state "AdminPanel" as Admin
+        state "FollowList(userId, type)" as FL
+    }
+
+    TabFeed --> RD : tap route card
+    TabExplore --> RD : tap route
+    TabExplore --> UP : tap user
+    TabAI --> ARR : generation complete
+    TabProfile --> Set : settings icon
+    TabProfile --> Notif : bell icon
+    TabProfile --> RC : create route
+    TabProfile --> Admin : admin button\n(if isAdmin)
+    TabProfile --> FL : tap followers\n/following
+
+    RC --> RMP : "pick on map"
+    RMP --> RC : onRouteSelected\n(coordinates, waypoints)
+    RC --> TabFeed : submit success
+    RD --> RE : edit button\n(if author)
+    RD --> UP : tap author
+    ARR --> TabFeed : publish success\nor back
+    UP --> FL : tap followers\n/following
+    UP --> RD : tap route
+
+    RD --> RD : toggleLike\ntoggleSave\ncomment\nreport
+    Notif --> RD : tap route notification
+    Notif --> UP : tap follower notification
+}
+
+MainApp --> Login : logout\n(isLoggedIn = false)
+
+@enduml

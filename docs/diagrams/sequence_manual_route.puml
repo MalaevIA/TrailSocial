@@ -1,0 +1,104 @@
+@startuml TrailSocial_Manual_Route_Creation
+!theme plain
+title Ручное создание маршрута - Sequence Diagram
+
+actor User
+participant "RouteCreateScreen" as RCS
+participant "RouteCreateViewModel" as RCVM
+participant "RouteMapPickerScreen" as RMPS
+participant "Yandex MapKit\n(Suggest + Router)" as YMK
+participant "Navigation.kt\n(RouteMapData)" as Nav
+participant "UploadRepository" as UR
+participant "RouteRepository" as RR
+database "Backend API" as BE
+
+== Открытие карты для построения маршрута ==
+
+User -> RCS : Нажать "Выбрать маршрут на карте"
+RCS -> Nav : currentScreen =\nScreen.RouteMapPicker
+Nav -> RMPS : Показать карту
+
+== Добавление точек маршрута ==
+
+User -> RMPS : Тап по карте\n(lat, lng)
+RMPS -> RMPS : Показать диалог\nименования точки
+User -> RMPS : Ввести название\n+ описание
+RMPS -> RMPS : waypoints.add(\nWaypointEntry(point,\nname, description))
+RMPS -> RMPS : Добавить маркер\nна карту
+
+== Поиск адреса ==
+
+User -> RMPS : Ввести "Парк Горького"\nв поиск (query >= 2 chars)
+RMPS -> YMK : suggestSession.suggest(\nquery, boundingBox, options)
+YMK --> RMPS : SuggestResponse\n(список подсказок)
+RMPS -> User : Показать список\nподсказок
+User -> RMPS : Выбрать подсказку
+RMPS -> RMPS : waypoints.add(\nWaypointEntry(point, name))
+RMPS -> RMPS : Добавить маркер
+
+== Построение пешеходного маршрута ==
+
+note over RMPS, YMK
+  Автоматически при >= 2 точек
+end note
+
+RMPS -> YMK : pedestrianRouter\n.requestRoutes(\nRequestPoint[]\n(WAYPOINT + VIAPOINT))
+YMK --> RMPS : DrivingRoute[]\n(polyline geometry)
+RMPS -> RMPS : Отобразить polyline\n(5px #2D6A4F\n+ 2px white outline)
+RMPS -> RMPS : Рассчитать distance\n+ duration из маршрута
+
+alt Маршрутизатор не нашёл путь
+    YMK --> RMPS : Ошибка маршрутизации
+    RMPS -> RMPS : Fallback:\nпрямая линия\n+ Haversine distance
+end
+
+RMPS -> User : Показать маршрут\n+ дистанция + кол-во точек
+
+== Возврат данных ==
+
+User -> RMPS : Нажать "Готово"
+RMPS -> Nav : onRouteSelected(\nstartLat, startLng,\nendLat, endLng,\ngeometry: List<[lng,lat]>,\ndistanceKm, durationMin,\nwaypoints: List<WaypointEntry>)
+Nav -> Nav : routeMapData =\nRouteMapData(...)
+Nav -> Nav : currentScreen =\nScreen.RouteCreate
+Nav -> RCVM : setRouteCoordinates(\nrouteMapData)
+RCVM -> RCVM : Обновить state:\ncoordinates, distance,\nduration, waypoints,\nauto-detect region
+
+== Заполнение формы ==
+
+User -> RCS : Заполнить:\n- Название\n- Описание\n- Сложность\n- Теги
+
+== Загрузка фото ==
+
+User -> RCS : Выбрать фото
+RCS -> RCVM : uploadPhoto(file)
+RCVM -> UR : uploadImage(file)
+UR -> UR : file → MultipartBody.Part
+UR -> BE : POST /upload/image\n(multipart/form-data)
+BE --> UR : {url: "https://..."}
+UR --> RCVM : ApiResult.Success(url)
+RCVM -> RCVM : photos.add(url)
+RCS -> User : Превью фото
+
+== Публикация ==
+
+User -> RCS : Нажать "Опубликовать"
+RCS -> RCVM : submit(asDraft = false)
+RCVM -> RCVM : Валидация:\n- title не пустой\n- hasCoordinates\n- >= 2 waypoints
+RCVM -> RCVM : Конвертация:\nWaypointEntry → WaypointDto
+RCVM -> RR : createRoute(\nCreateRouteRequest)
+RR -> BE : POST /routes
+BE --> RR : 201 RouteResponse
+RR --> RCVM : ApiResult.Success
+RCVM -> RCVM : isSubmitted = true
+RCS -> User : "Маршрут создан!"\n→ навигация к FeedScreen
+
+== Сохранение как черновик ==
+
+User -> RCS : Нажать "Сохранить черновик"
+RCS -> RCVM : submit(asDraft = true)
+RCVM -> RR : createRoute(\nCreateRouteRequest\nstatus = DRAFT)
+RR -> BE : POST /routes
+BE --> RR : 201 RouteResponse
+RCS -> User : "Черновик сохранён"
+
+@enduml
