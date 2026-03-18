@@ -142,6 +142,35 @@ fun RouteResultScreen(
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
 
+            // ── Фотографии маршрута ───────────────────────
+            if (route.photos.isNotEmpty()) {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    items(route.photos) { photo ->
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(routePhotoUrl(photo))
+                                .build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .height(180.dp)
+                                .width(260.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                        )
+                    }
+                }
+            } else {
+                RoutePhotoPlaceholder(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                )
+            }
+
             // ── Переключатель Карта / Список ──────────────
             TabRow(
                 selectedTabIndex = if (showMap) 0 else 1,
@@ -432,45 +461,13 @@ private fun RouteDetailsPanel(
     onPublish: () -> Unit = {},
     onSaveDraft: () -> Unit = {}
 ) {
-    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // ── Фотографии ──
-        if (route.photos.isNotEmpty()) {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(route.photos) { photo ->
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(routePhotoUrl(photo))
-                            .build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .height(180.dp)
-                            .width(260.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                    )
-                }
-            }
-        } else {
-            RoutePhotoPlaceholder(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-            )
-        }
-
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
         // Описание
         Text(route.description, fontSize = 14.sp, lineHeight = 21.sp,
              color = MaterialTheme.colorScheme.onSurface.copy(0.85f))
@@ -567,7 +564,6 @@ private fun RouteDetailsPanel(
         }
 
         Spacer(Modifier.height(16.dp))
-        } // end inner padded Column
     }
 }
 
