@@ -1,5 +1,7 @@
 package com.trail2.ui.viewmodels
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trail2.data.remote.ApiResult
@@ -176,6 +178,20 @@ class RouteCreateViewModel @Inject constructor(
             }
         }
     }
+
+    fun uploadPhotoUri(uri: Uri, context: Context) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUploading = true) }
+            when (val result = uploadRepository.uploadPhoto(uri, context)) {
+                is ApiResult.Success -> updateForm { copy(photoUrls = photoUrls + result.data) }
+                is ApiResult.Error -> _uiState.update { it.copy(isUploading = false, error = result.message) }
+                is ApiResult.NetworkError -> _uiState.update { it.copy(isUploading = false, error = "Нет подключения") }
+            }
+            _uiState.update { it.copy(isUploading = false) }
+        }
+    }
+
+    fun removePhoto(url: String) = updateForm { copy(photoUrls = photoUrls - url) }
 
     fun submit(asDraft: Boolean = false) {
         val form = _uiState.value.form

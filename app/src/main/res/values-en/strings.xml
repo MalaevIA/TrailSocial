@@ -158,6 +158,9 @@
     <string name="create_new_tag">New tag</string>
     <string name="create_submit">Create</string>
     <string name="create_save_draft">Save draft</string>
+    <string name="create_photos">Photos</string>
+    <string name="create_add_photo">Add photo</string>
+    <string name="create_photo_delete">Delete photo</string>
 
     <!-- Route Result screen -->
     <string name="result_rebuild">Rebuild</string>

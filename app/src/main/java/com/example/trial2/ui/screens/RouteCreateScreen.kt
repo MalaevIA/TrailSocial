@@ -1,7 +1,13 @@
 package com.trail2.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,16 +23,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.trail2.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ui.components.RouteMapView
 import com.trail2.ui.theme.ForestGreen
+import com.trail2.ui.util.routePhotoUrl
 import com.trail2.ui.viewmodels.RouteCreateViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -39,6 +50,10 @@ fun RouteCreateScreen(
 ) {
     val uiState by vm.uiState.collectAsStateWithLifecycle()
     val form = uiState.form
+    val context = LocalContext.current
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { vm.uploadPhotoUri(it, context) }
+    }
 
     LaunchedEffect(uiState.createdRouteId) {
         uiState.createdRouteId?.let { onRouteCreated(it) }
@@ -222,6 +237,73 @@ fun RouteCreateScreen(
                 )
                 IconButton(onClick = vm::addTag) {
                     Icon(Icons.Default.Add, stringResource(R.string.add))
+                }
+            }
+
+            // ── Photos ──
+            Text(stringResource(R.string.create_photos), style = MaterialTheme.typography.labelLarge)
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(form.photoUrls) { url ->
+                    Box(modifier = Modifier.size(88.dp)) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(context).data(routePhotoUrl(url)).build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(8.dp))
+                        )
+                        IconButton(
+                            onClick = { vm.removePhoto(url) },
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(28.dp)
+                                .padding(2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(R.string.create_photo_delete),
+                                tint = Color.White,
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .background(Color.Black.copy(alpha = 0.45f), CircleShape)
+                            )
+                        }
+                    }
+                }
+                if (form.photoUrls.size < 10) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .size(88.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clickable(enabled = !uiState.isUploading) { photoPicker.launch("image/*") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (uiState.isUploading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp,
+                                    color = ForestGreen
+                                )
+                            } else {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = stringResource(R.string.create_add_photo),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.create_add_photo),
+                                        fontSize = 10.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
