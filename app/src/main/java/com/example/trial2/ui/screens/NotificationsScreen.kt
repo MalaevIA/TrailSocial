@@ -21,6 +21,7 @@ import com.trail2.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.data.Notification
 import com.trail2.data.NotificationType
+import com.trail2.ui.util.formatDate
 import com.trail2.ui.viewmodels.NotificationViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -133,7 +134,7 @@ private fun NotificationItem(
                     fontWeight = if (!notification.isRead) FontWeight.SemiBold else FontWeight.Normal
                 )
                 Text(
-                    text = notification.createdAt.take(10),
+                    text = formatDate(notification.createdAt),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

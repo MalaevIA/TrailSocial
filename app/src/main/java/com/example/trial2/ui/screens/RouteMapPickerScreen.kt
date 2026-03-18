@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import android.os.Handler
+import android.os.Looper
 import com.trail2.R
 import com.trail2.ui.theme.ForestGreen
 import com.yandex.mapkit.MapKitFactory
@@ -45,9 +47,9 @@ import com.yandex.mapkit.search.SuggestResponse
 import com.yandex.mapkit.search.SuggestSession
 import com.yandex.mapkit.search.SuggestType
 import com.yandex.mapkit.transport.TransportFactory
+import com.yandex.mapkit.transport.masstransit.FitnessOptions
 import com.yandex.mapkit.transport.masstransit.PedestrianRouter
 import com.yandex.mapkit.transport.masstransit.Route
-import com.yandex.mapkit.transport.masstransit.FitnessOptions
 import com.yandex.mapkit.transport.masstransit.RouteOptions
 import com.yandex.mapkit.transport.masstransit.Session
 import com.yandex.mapkit.transport.masstransit.TimeOptions
@@ -586,8 +588,10 @@ private fun requestPedestrianRoute(
     val requestPoints = points.mapIndexed { idx, point ->
         val type = if (idx == 0 || idx == points.lastIndex) RequestPointType.WAYPOINT
                    else RequestPointType.VIAPOINT
-        RequestPoint(point, type, "", "")
+        RequestPoint(point, type, null, null)
     }
+
+    val mainHandler = Handler(Looper.getMainLooper())
 
     routerSession.value = pedestrianRouter.requestRoutes(
         requestPoints,
@@ -600,30 +604,29 @@ private fun requestPedestrianRoute(
                     val geometryPoints = bestRoute.geometry.points
                     val metadata = bestRoute.metadata
                     val weight = metadata.weight
-                    val walkingDistance = weight.walkingDistance.value
-                    val distKm = walkingDistance / 1000.0
-                    val walkingTime = weight.time.value // seconds
-                    val durMinutes = (walkingTime / 60).toInt()
+                    val distKm = weight.walkingDistance.value / 1000.0
+                    val durMinutes = (weight.time.value / 60).toInt()
 
-                    val map = mapView.mapWindow.map
-                    map.mapObjects.clear()
-                    drawMarkers(mapView, points)
-                    val polylineObj = map.mapObjects.addPolyline(Polyline(geometryPoints))
-                    polylineObj.apply {
-                        strokeWidth = 5f
-                        setStrokeColor(android.graphics.Color.parseColor("#2D6A4F"))
-                        outlineColor = android.graphics.Color.WHITE
-                        outlineWidth = 2f
+                    mainHandler.post {
+                        val map = mapView.mapWindow.map
+                        map.mapObjects.clear()
+                        drawMarkers(mapView, points)
+                        val polylineObj = map.mapObjects.addPolyline(Polyline(geometryPoints))
+                        polylineObj.apply {
+                            strokeWidth = 5f
+                            setStrokeColor(android.graphics.Color.parseColor("#2D6A4F"))
+                            outlineColor = android.graphics.Color.WHITE
+                            outlineWidth = 2f
+                        }
+                        onResult(geometryPoints, distKm, durMinutes)
                     }
-
-                    onResult(geometryPoints, distKm, durMinutes)
                 } else {
-                    onFallback()
+                    mainHandler.post { onFallback() }
                 }
             }
 
             override fun onMasstransitRoutesError(error: Error) {
-                onFallback()
+                mainHandler.post { onFallback() }
             }
         }
     )

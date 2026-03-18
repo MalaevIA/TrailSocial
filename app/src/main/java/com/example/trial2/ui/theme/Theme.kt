@@ -57,5 +57,9 @@ fun VerstaTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) TrailDarkColorScheme else TrailLightColorScheme
-    MaterialTheme(colorScheme = colorScheme, content = content)
+    MaterialTheme(
+        colorScheme = colorScheme,
+        typography = MontserratTypography,
+        content = content
+    )
 }

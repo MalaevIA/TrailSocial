@@ -23,7 +23,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ui.components.DifficultyBadge
 import com.trail2.R
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.trail2.ui.theme.ForestGreen
+import com.trail2.ui.util.routePhotoUrl
 import com.trail2.ui.viewmodels.ExploreViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -155,7 +160,6 @@ fun RegionCard(region: String, colorHex: String, onClick: () -> Unit) {
 
 @Composable
 fun ExploreRouteRow(route: com.trail2.data.TrailRoute, onClick: () -> Unit) {
-    val photoColor = try { Color(android.graphics.Color.parseColor("#${route.photos.firstOrNull()}")) } catch (_: Exception) { ForestGreen }
     Card(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
@@ -163,9 +167,19 @@ fun ExploreRouteRow(route: com.trail2.data.TrailRoute, onClick: () -> Unit) {
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
             Box(
-                modifier = Modifier.width(90.dp).height(80.dp).background(photoColor),
+                modifier = Modifier.width(90.dp).height(80.dp),
                 contentAlignment = Alignment.Center
             ) {
+                Box(modifier = Modifier.fillMaxSize().background(ForestGreen))
+                val photoUrl = route.photos.firstOrNull()?.let { routePhotoUrl(it) }
+                if (photoUrl != null) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current).data(photoUrl).build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
                 DifficultyBadge(route.difficulty)
             }
             Column(modifier = Modifier.fillMaxWidth().padding(10.dp)) {

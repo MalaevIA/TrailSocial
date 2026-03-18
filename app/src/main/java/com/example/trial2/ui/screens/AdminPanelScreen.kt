@@ -30,6 +30,7 @@ import com.trail2.data.ReportStatus
 import com.trail2.data.TargetType
 import com.trail2.data.User
 import com.trail2.ui.theme.ForestGreen
+import com.trail2.ui.util.formatDate
 import com.trail2.ui.viewmodels.AdminViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -254,7 +255,7 @@ private fun AdminUserItem(
                     }
                 }
                 Text(
-                    "@${user.username} · ${user.createdAt.take(10)}",
+                    "@${user.username} · ${formatDate(user.createdAt)}",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -519,7 +520,7 @@ private fun ReportItem(
             }
 
             Spacer(Modifier.height(4.dp))
-            Text(report.createdAt.take(10), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(formatDate(report.createdAt), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             // Actions (only for pending reports)
             if (report.status == ReportStatus.PENDING) {

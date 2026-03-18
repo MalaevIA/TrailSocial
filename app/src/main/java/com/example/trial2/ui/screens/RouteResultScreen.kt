@@ -47,7 +47,6 @@ import com.trail2.ui.viewmodels.RouteResultViewModel
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.RequestPoint
 import com.yandex.mapkit.RequestPointType
-import com.yandex.mapkit.transport.masstransit.FitnessOptions
 import com.yandex.mapkit.transport.masstransit.RouteOptions
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.geometry.Polyline
@@ -286,7 +285,7 @@ private fun requestPedestrianRoute(
     routerSession.value = pedestrianRouter.requestRoutes(
         requestPoints,
         TimeOptions(),
-        RouteOptions(FitnessOptions()),
+        RouteOptions(),
         object : Session.RouteListener {
             override fun onMasstransitRoutes(routes: MutableList<Route>) {
                 if (routes.isNotEmpty()) {

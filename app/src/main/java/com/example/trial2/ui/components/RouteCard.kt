@@ -3,6 +3,8 @@ package com.trail2.ui.components
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,13 +16,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.trail2.data.Difficulty
+import com.trail2.data.GeoJsonLineString
 import com.trail2.data.TrailRoute
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.trail2.ui.theme.*
+import com.trail2.ui.util.RoutePhotoPlaceholder
+import com.trail2.ui.util.formatDate
+import com.trail2.ui.util.routePhotoUrl
 
 @Composable
 fun RouteCard(
@@ -49,22 +65,72 @@ fun RouteCard(
                     Text(route.author.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     Text(route.region, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text(route.createdAt, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(formatDate(route.createdAt), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
             // Photo banner
             Box(modifier = Modifier.fillMaxWidth().height(200.dp)) {
-                val photoColor = try { Color(android.graphics.Color.parseColor("#${route.photos.first()}")) } catch (e: Exception) { ForestGreen }
-                Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(photoColor, photoColor.copy(alpha = 0.7f)))))
-                Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.5f))))
-                DifficultyBadge(difficulty = route.difficulty, modifier = Modifier.align(Alignment.TopEnd).padding(10.dp))
-                if (route.photos.size > 1) {
-                    Row(modifier = Modifier.align(Alignment.TopStart).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        route.photos.take(4).forEachIndexed { i, _ ->
-                            Box(modifier = Modifier.size(if (i == 0) 8.dp else 6.dp).clip(CircleShape).background(if (i == 0) Color.White else Color.White.copy(0.5f)))
+                if (route.photos.isEmpty()) {
+                    // No photos — show real Yandex map
+                    val hasCoords = route.startLat != null && route.startLng != null &&
+                            route.endLat != null && route.endLng != null
+                    if (hasCoords) {
+                        RouteMapView(
+                            geometry = route.geometry?.coordinates ?: listOf(
+                                listOf(route.startLng!!, route.startLat!!),
+                                listOf(route.endLng!!, route.endLat!!)
+                            ),
+                            startLat = route.startLat!!,
+                            startLng = route.startLng!!,
+                            endLat = route.endLat!!,
+                            endLng = route.endLng!!,
+                            modifier = Modifier.fillMaxSize(),
+                            manageMapKitLifecycle = false
+                        )
+                    } else {
+                        RouteMapPreview(geometry = route.geometry, modifier = Modifier.fillMaxSize())
+                    }
+                } else if (route.photos.size == 1) {
+                    // Single photo
+                    RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current).data(routePhotoUrl(route.photos[0])).build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    // Multiple photos — swipeable carousel
+                    val pagerState = rememberPagerState { route.photos.size }
+                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current).data(routePhotoUrl(route.photos[page])).build(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+                    // Dot indicators
+                    Row(
+                        modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        route.photos.indices.forEach { i ->
+                            val isSelected = pagerState.currentPage == i
+                            Box(
+                                modifier = Modifier
+                                    .size(if (isSelected) 8.dp else 6.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isSelected) Color.White else Color.White.copy(0.5f))
+                            )
                         }
                     }
                 }
+                Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.5f))))
+                DifficultyBadge(difficulty = route.difficulty, modifier = Modifier.align(Alignment.TopEnd).padding(10.dp))
                 Column(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)) {
                     Text(route.title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Spacer(Modifier.height(4.dp))
@@ -196,3 +262,57 @@ fun difficultyShortLabel(d: Difficulty): String = when (d) {
 }
 
 fun formatCount(count: Int): String = if (count >= 1000) "${count / 1000}.${(count % 1000) / 100}к" else count.toString()
+
+@Composable
+fun RouteMapPreview(geometry: GeoJsonLineString?, modifier: Modifier = Modifier) {
+    val lineColor = Color(0xFF2D6A4F)
+    Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceVariant)) {
+        if (geometry != null && geometry.coordinates.size >= 2) {
+            Canvas(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+                val coords = geometry.coordinates
+                // Normalize coordinates to [0,1] range
+                val lngs = coords.map { it[0] }
+                val lats = coords.map { it[1] }
+                val minLng = lngs.min(); val maxLng = lngs.max()
+                val minLat = lats.min(); val maxLat = lats.max()
+                val lngRange = (maxLng - minLng).takeIf { it > 0 } ?: 1.0
+                val latRange = (maxLat - minLat).takeIf { it > 0 } ?: 1.0
+                val aspectRatio = size.width / size.height
+                val scale = if (lngRange / latRange > aspectRatio) size.width / lngRange else size.height / latRange
+                val offsetX = (size.width - lngRange * scale) / 2f
+                val offsetY = (size.height - latRange * scale) / 2f
+
+                fun toOffset(coord: List<Double>): Offset {
+                    val x = ((coord[0] - minLng) * scale + offsetX).toFloat()
+                    val y = (size.height - (coord[1] - minLat) * scale - offsetY).toFloat()
+                    return Offset(x, y)
+                }
+
+                // White outline stroke
+                val path = Path()
+                path.moveTo(toOffset(coords[0]).x, toOffset(coords[0]).y)
+                coords.drop(1).forEach { path.lineTo(toOffset(it).x, toOffset(it).y) }
+                drawPath(path, Color.White.copy(alpha = 0.7f), style = Stroke(width = 6f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                // Green line
+                drawPath(path, lineColor, style = Stroke(width = 4f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+
+                // Start dot (green filled, white border)
+                val start = toOffset(coords.first())
+                drawCircle(Color.White, radius = 8f, center = start)
+                drawCircle(lineColor, radius = 5f, center = start)
+                // End dot (red filled, white border)
+                val end = toOffset(coords.last())
+                drawCircle(Color.White, radius = 8f, center = end)
+                drawCircle(Color(0xFFE63946), radius = 5f, center = end)
+            }
+        } else {
+            // No geometry — show landscape icon placeholder
+            androidx.compose.material3.Icon(
+                imageVector = androidx.compose.material.icons.Icons.Outlined.Landscape,
+                contentDescription = null,
+                tint = lineColor.copy(alpha = 0.4f),
+                modifier = Modifier.size(52.dp).align(Alignment.Center)
+            )
+        }
+    }
+}

@@ -29,17 +29,18 @@ fun RouteMapView(
     startLng: Double,
     endLat: Double,
     endLng: Double,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    manageMapKitLifecycle: Boolean = true
 ) {
     val context = LocalContext.current
     val mapView = remember { MapView(context) }
 
     DisposableEffect(Unit) {
-        MapKitFactory.getInstance().onStart()
+        if (manageMapKitLifecycle) MapKitFactory.getInstance().onStart()
         mapView.onStart()
         onDispose {
             mapView.onStop()
-            MapKitFactory.getInstance().onStop()
+            if (manageMapKitLifecycle) MapKitFactory.getInstance().onStop()
         }
     }
 

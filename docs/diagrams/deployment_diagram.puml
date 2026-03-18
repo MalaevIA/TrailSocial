@@ -1,63 +1,68 @@
 @startuml TrailSocial_Deployment
 !theme plain
-title TrailSocial - Deployment Diagram
+title Диаграмма развёртывания — «Верста»
 
 skinparam node {
     BackgroundColor #FFFBF5
     BorderColor #2D6A4F
 }
 
-node "Android Device" as device {
-    artifact "TrailSocial.apk" as apk {
-        component "Jetpack Compose UI" as ui
-        component "Hilt DI Container" as hilt
-        component "OkHttp + Retrofit" as http
-        component "TokenManager\n(EncryptedSharedPrefs)" as token
-        component "DataStore\n(Preferences)" as ds
-        component "Yandex MapKit SDK" as mapkit
+node "Устройство пользователя\n(Android 8.0+)" as device {
+    artifact "Верста.apk" as apk {
+        component "Интерфейс\n(Jetpack Compose)" as ui
+        component "Контейнер DI\n(Hilt)" as hilt
+        component "HTTP-клиент\n(Retrofit + OkHttp)" as http
+        component "Хранилище токенов\n(EncryptedSharedPrefs)" as token
+        component "Настройки\n(DataStore)" as ds
+        component "Картографический SDK\n(Yandex MapKit)" as mapkit
     }
 }
 
-node "Android Emulator\n(10.0.2.2)" as emulator {
-    node "Django Backend" as backend {
-        component "Django REST Framework" as drf
-        component "JWT Auth\n(SimpleJWT)" as jwt
-        component "AI Route Service" as ai_service
-        database "PostgreSQL" as db
-        storage "Media Storage\n(Images)" as media
+node "Docker Host\n(Ubuntu 22.04)" as host {
+    node "Контейнер приложения" as app {
+        artifact "FastAPI + Uvicorn" as fastapi
+        artifact "Миграции БД\n(Alembic)" as alembic
+        folder "Файловое хранилище\n(uploads/)" as uploads
+    }
+    node "Контейнер базы данных" as dbcont {
+        database "PostgreSQL 16\n(порт 5433)" as pg
     }
 }
 
-cloud "Yandex Cloud" as yandex {
-    component "MapKit API\n(Maps, Tiles)" as mapapi
-    component "Geocoder API\n(Suggest, Search)" as geocoder
-    component "Pedestrian Router API" as router
+cloud "Внешние сервисы" as external {
+    node "Yandex Cloud\n(Qwen 3 235B)" as gpt
+    node "Yandex Geocoder API\n(геокодирование)" as geo
+    node "OSRM\n(построение маршрутов)" as osrm
+    node "Yandex MapKit API\n(тайлы карт)" as mapapi
 }
 
-' Connections
-ui --> hilt : injection
+' Связи клиента
+ui --> hilt : внедрение зависимостей
 hilt --> http
 hilt --> token
 hilt --> ds
 ui --> mapkit
 
-http --> drf : HTTP/REST\nBase URL:\nhttp://10.0.2.2:8000/api/v1/
+' Клиент → Сервер
+http --> fastapi : HTTPS / REST + WebSocket\n/api/v1/*
 note on link
-  JSON (kotlinx.serialization)
-  Auth: Bearer JWT
-  Timeout: 30s/120s/60s
+  Формат: JSON
+  Авторизация: Bearer JWT
+  Таймаут: 30с / 120с / 60с
 end note
 
-drf --> jwt : auth check
-drf --> db : queries
-drf --> media : file upload
-drf --> ai_service : route generation
+' Сервер → БД и хранилище
+fastapi --> pg : asyncpg\n(порт 5433)
+alembic --> pg : миграции схемы
+fastapi --> uploads : файловый ввод/вывод
 
-mapkit --> mapapi : map tiles
-mapkit --> geocoder : address suggest
-mapkit --> router : pedestrian routing
-note on link
-  API Key: BuildConfig.\nYANDEX_MAPKIT_KEY
-end note
+' Сервер → внешние сервисы
+fastapi --> gpt : HTTPS\n(генерация маршрута)
+fastapi --> geo : HTTPS\n(геокодирование точек)
+fastapi --> osrm : HTTP\n(пешая геометрия)
+
+' MapKit SDK → API
+mapkit --> mapapi : тайлы карт
+mapkit --> geo : подсказки адресов
 
 @enduml

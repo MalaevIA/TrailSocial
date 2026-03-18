@@ -28,6 +28,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import com.trail2.R
 import com.trail2.data.Difficulty
 import com.trail2.data.RouteStatus
@@ -36,6 +38,12 @@ import com.trail2.ui.components.ReportDialog
 import com.trail2.ui.components.RouteMapView
 import com.trail2.ui.theme.ForestGreen
 import com.trail2.ui.theme.MossGreen
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import com.trail2.ui.util.RoutePhotoPlaceholder
+import com.trail2.ui.util.formatDate
+import com.trail2.ui.util.routePhotoUrl
 import com.trail2.ui.viewmodels.RouteDetailViewModel
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.geometry.Point
@@ -201,35 +209,39 @@ fun RouteDetailScreen(
                 .padding(padding)
                 .verticalScroll(scrollState)
         ) {
-            Box(modifier = Modifier.fillMaxWidth().height(280.dp)) {
-                val photoColor = try { Color(android.graphics.Color.parseColor("#${route.photos.firstOrNull()}")) } catch (_: Exception) { ForestGreen }
-                Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(photoColor.copy(0.8f), photoColor))))
-                Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(0.5f to Color.Transparent, 1f to Color.Black.copy(0.4f))))
-
-                Row(
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    route.photos.take(3).forEachIndexed { i, colorHex ->
-                        val c = try { Color(android.graphics.Color.parseColor("#$colorHex")) } catch (_: Exception) { MossGreen }
-                        Box(
-                            modifier = Modifier
-                                .size(if (i == 0) 48.dp else 36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(c)
-                                .border(if (i == 0) 2.dp else 0.dp, Color.White, RoundedCornerShape(8.dp))
-                        )
+            if (route.photos.isNotEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().height(280.dp)) {
+                    val pagerState = rememberPagerState { route.photos.size }
+                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current).data(routePhotoUrl(route.photos[page])).build(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
-                    if (route.photos.size > 3) {
-                        Box(
-                            modifier = Modifier.size(36.dp).clip(RoundedCornerShape(8.dp)).background(Color.Black.copy(0.5f)),
-                            contentAlignment = Alignment.Center
+                    Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(0.4f to Color.Transparent, 1f to Color.Black.copy(0.5f))))
+                    DifficultyBadge(route.difficulty, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp))
+                    if (route.photos.size > 1) {
+                        Row(
+                            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text("+${route.photos.size - 3}", color = Color.White, fontSize = 12.sp)
+                            route.photos.indices.forEach { i ->
+                                val isSelected = pagerState.currentPage == i
+                                Box(
+                                    modifier = Modifier
+                                        .size(if (isSelected) 8.dp else 6.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isSelected) Color.White else Color.White.copy(0.5f))
+                                )
+                            }
                         }
                     }
                 }
-                DifficultyBadge(route.difficulty, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp))
             }
 
             // ── Route map ──
@@ -296,7 +308,7 @@ fun RouteDetailScreen(
                     Spacer(Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(route.author.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                        Text("@${route.author.username} · ${route.createdAt.take(10)}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("@${route.author.username} · ${formatDate(route.createdAt)}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     FilledTonalButton(
                         onClick = vm::toggleFollow,
@@ -616,7 +628,7 @@ fun CommentItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(comment.author.name, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                 Spacer(Modifier.width(8.dp))
-                Text(comment.createdAt.take(10), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(formatDate(comment.createdAt), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.height(3.dp))
             Text(comment.text, fontSize = 13.sp, lineHeight = 18.sp)
