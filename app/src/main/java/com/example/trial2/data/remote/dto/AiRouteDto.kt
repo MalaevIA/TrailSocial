@@ -39,5 +39,6 @@ data class GeneratedRouteDto(
     val highlights: List<String> = emptyList(),
     val tips: List<String> = emptyList(),
     val geometry: GeoJsonLineStringDto? = null,
-    val waypoints: List<WaypointDto>? = null
+    val waypoints: List<WaypointDto>? = null,
+    val photos: List<String>? = null
 )

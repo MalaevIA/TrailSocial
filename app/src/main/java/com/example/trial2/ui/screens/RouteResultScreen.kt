@@ -20,6 +20,8 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -31,18 +33,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
 import com.trail2.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ai_route.GeneratedRoute
 import com.trail2.ai_route.RoutePoint
 import com.trail2.ui.theme.ForestGreen
+import com.trail2.ui.util.RoutePhotoPlaceholder
+import com.trail2.ui.util.routePhotoUrl
 import com.trail2.ui.viewmodels.RouteResultViewModel
 import com.yandex.mapkit.MapKitFactory
 import com.yandex.mapkit.RequestPoint
@@ -425,13 +432,45 @@ private fun RouteDetailsPanel(
     onPublish: () -> Unit = {},
     onSaveDraft: () -> Unit = {}
 ) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // ── Фотографии ──
+        if (route.photos.isNotEmpty()) {
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(route.photos) { photo ->
+                    AsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(routePhotoUrl(photo))
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .height(180.dp)
+                            .width(260.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                }
+            }
+        } else {
+            RoutePhotoPlaceholder(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp)
+            )
+        }
+
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
         // Описание
         Text(route.description, fontSize = 14.sp, lineHeight = 21.sp,
              color = MaterialTheme.colorScheme.onSurface.copy(0.85f))
@@ -528,6 +567,7 @@ private fun RouteDetailsPanel(
         }
 
         Spacer(Modifier.height(16.dp))
+        } // end inner padded Column
     }
 }
 

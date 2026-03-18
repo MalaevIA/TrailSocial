@@ -137,7 +137,8 @@ data class GeneratedRoute(
     val tips: List<String>,
     val tags: List<String>,
     val highlights: List<String> = emptyList(),
-    val geometry: GeoJsonLineString? = null
+    val geometry: GeoJsonLineString? = null,
+    val photos: List<String> = emptyList()
 )
 
 data class RoutePoint(

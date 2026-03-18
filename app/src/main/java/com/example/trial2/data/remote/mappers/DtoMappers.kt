@@ -118,7 +118,8 @@ fun GeneratedRouteDto.toDomain() = GeneratedRoute(
     highlights = highlights,
     geometry = geometry?.let {
         GeoJsonLineString(it.type, it.coordinates)
-    }
+    },
+    photos = photos ?: emptyList()
 )
 
 fun <T, R> PaginatedResponseDto<T>.toDomain(mapper: (T) -> R) = PaginatedResponse(
