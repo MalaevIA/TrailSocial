@@ -16,6 +16,7 @@ import com.trail2.BuildConfig
 import com.trail2.ui.theme.ForestGreen
 
 fun routePhotoUrl(path: String): String {
+    if (path.startsWith("http://") || path.startsWith("https://")) return path
     val serverRoot = BuildConfig.BASE_URL.removeSuffix("api/v1/")
     return serverRoot + path.removePrefix("/")
 }

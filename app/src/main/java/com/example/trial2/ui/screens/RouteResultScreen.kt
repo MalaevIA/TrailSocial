@@ -150,17 +150,22 @@ fun RouteResultScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     items(route.photos) { photo ->
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(routePhotoUrl(photo))
-                                .build(),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
+                        Box(
                             modifier = Modifier
                                 .height(180.dp)
                                 .width(260.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                        )
+                        ) {
+                            RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(routePhotoUrl(photo))
+                                    .build(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
             } else {
