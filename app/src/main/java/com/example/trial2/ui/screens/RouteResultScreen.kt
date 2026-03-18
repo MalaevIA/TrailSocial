@@ -45,6 +45,7 @@ import coil3.request.ImageRequest
 import com.trail2.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.request.crossfade
 import com.trail2.ai_route.GeneratedRoute
 import com.trail2.ai_route.RoutePoint
 import com.trail2.ui.theme.ForestGreen
@@ -157,9 +158,22 @@ fun RouteResultScreen(
                                 .clip(RoundedCornerShape(12.dp))
                         ) {
                             RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
+                            val url = routePhotoUrl(photo)
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
-                                    .data(routePhotoUrl(photo))
+                                    .data(url)
+                                    .listener(
+                                        onStart = {
+                                            android.util.Log.d("RoutePhoto", "Loading: $url")
+                                        },
+                                        onSuccess = { _, _ ->
+                                            android.util.Log.d("RoutePhoto", "OK: $url")
+                                        },
+                                        onError = { _, result ->
+                                            android.util.Log.e("RoutePhoto", "FAIL: $url — ${result.throwable}")
+                                        }
+                                    )
+                                    .crossfade(true)
                                     .build(),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
