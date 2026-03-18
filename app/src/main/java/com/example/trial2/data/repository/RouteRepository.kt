@@ -2,6 +2,7 @@ package com.trail2.data.repository
 
 import com.trail2.data.Difficulty
 import com.trail2.data.PaginatedResponse
+import com.trail2.data.RegionInfo
 import com.trail2.data.TrailRoute
 import com.trail2.data.remote.ApiResult
 import com.trail2.data.remote.api.RouteApi
@@ -123,7 +124,7 @@ class RouteRepository @Inject constructor(
         routeApi.searchUsers(query, page).toDomain { it.toDomain() }
     }
 
-    suspend fun getRegions(): ApiResult<List<String>> = safeApiCall {
-        routeApi.getRegions()
+    suspend fun getRegions(): ApiResult<List<RegionInfo>> = safeApiCall {
+        routeApi.getRegions().map { it.toDomain() }
     }
 }

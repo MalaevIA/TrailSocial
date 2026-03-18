@@ -84,6 +84,12 @@ enum class NotificationType {
     NEW_FOLLOWER, ROUTE_LIKE, NEW_COMMENT, NEW_ROUTE
 }
 
+data class RegionInfo(
+    val name: String,
+    val routeCount: Int = 0,
+    val photoUrl: String? = null
+)
+
 data class PaginatedResponse<T>(
     val items: List<T>,
     val total: Int,

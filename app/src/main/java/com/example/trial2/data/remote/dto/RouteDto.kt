@@ -4,6 +4,13 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class RegionInfoDto(
+    val name: String,
+    @SerialName("route_count") val routeCount: Int = 0,
+    @SerialName("photo_url") val photoUrl: String? = null
+)
+
+@Serializable
 data class GeoJsonLineStringDto(
     val type: String = "LineString",
     val coordinates: List<List<Double>> = emptyList()

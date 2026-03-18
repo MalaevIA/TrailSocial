@@ -2,6 +2,7 @@ package com.trail2.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.trail2.data.RegionInfo
 import com.trail2.data.TrailRoute
 import com.trail2.data.User
 import com.trail2.data.remote.ApiResult
@@ -20,7 +21,7 @@ data class ExploreUiState(
     val query: String = "",
     val routes: List<TrailRoute> = emptyList(),
     val users: List<User> = emptyList(),
-    val regions: List<String> = emptyList(),
+    val regions: List<RegionInfo> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val isSearching: Boolean = false

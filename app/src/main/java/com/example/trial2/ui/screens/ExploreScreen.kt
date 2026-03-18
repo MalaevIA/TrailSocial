@@ -27,6 +27,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import coil3.request.crossfade
+import com.trail2.data.RegionInfo
 import com.trail2.ui.theme.ForestGreen
 import com.trail2.ui.util.routePhotoUrl
 import com.trail2.ui.viewmodels.ExploreViewModel
@@ -62,6 +64,7 @@ fun ExploreScreen(
                 CircularProgressIndicator()
             }
         } else {
+            val defaultRegionColors = listOf("2D6A4F", "E76F51", "457B9D", "E63946", "264653", "6D6875")
             val defaultRegions = listOf(
                 stringResource(R.string.region_ural),
                 stringResource(R.string.region_caucasus),
@@ -69,8 +72,7 @@ fun ExploreScreen(
                 stringResource(R.string.region_kamchatka),
                 stringResource(R.string.region_karelia),
                 stringResource(R.string.region_siberia)
-            )
-            val regionColors = listOf("2D6A4F", "E76F51", "457B9D", "E63946", "264653", "6D6875")
+            ).mapIndexed { i, name -> RegionInfo(name = name) }
             val regions = if (uiState.regions.isNotEmpty()) uiState.regions else defaultRegions
 
             LazyColumn(
@@ -93,8 +95,8 @@ fun ExploreScreen(
                             items(regions.size.coerceAtMost(6)) { i ->
                                 RegionCard(
                                     region = regions[i],
-                                    colorHex = regionColors[i % regionColors.size],
-                                    onClick = { vm.searchByRegion(regions[i]) }
+                                    colorHex = defaultRegionColors[i % defaultRegionColors.size],
+                                    onClick = { vm.searchByRegion(regions[i].name) }
                                 )
                             }
                         }
@@ -141,19 +143,47 @@ fun ExploreScreen(
 }
 
 @Composable
-fun RegionCard(region: String, colorHex: String, onClick: () -> Unit) {
+fun RegionCard(region: RegionInfo, colorHex: String, onClick: () -> Unit) {
     val color = try { Color(android.graphics.Color.parseColor("#$colorHex")) } catch (_: Exception) { ForestGreen }
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(90.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Brush.verticalGradient(listOf(color.copy(0.7f), color)))
             .clickable { onClick() },
         contentAlignment = Alignment.BottomStart
     ) {
+        // Цветной фон-заглушка
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Brush.verticalGradient(listOf(color.copy(0.7f), color)))
+        )
+        // Фото региона (если есть)
+        if (region.photoUrl != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(routePhotoUrl(region.photoUrl))
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Тёмный градиент поверх фото для читаемости текста
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f))
+                        )
+                    )
+            )
+        }
+        // Название региона
         Column(modifier = Modifier.padding(10.dp)) {
-            Text(region, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(region.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
     }
 }

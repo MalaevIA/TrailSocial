@@ -122,6 +122,12 @@ fun GeneratedRouteDto.toDomain() = GeneratedRoute(
     photos = photos ?: emptyList()
 )
 
+fun RegionInfoDto.toDomain() = RegionInfo(
+    name = name,
+    routeCount = routeCount,
+    photoUrl = photoUrl
+)
+
 fun <T, R> PaginatedResponseDto<T>.toDomain(mapper: (T) -> R) = PaginatedResponse(
     items = items.map(mapper),
     total = total,

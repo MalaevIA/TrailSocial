@@ -1,6 +1,7 @@
 package com.trail2.data.remote.api
 
 import com.trail2.data.remote.dto.PaginatedResponseDto
+import com.trail2.data.remote.dto.RegionInfoDto
 import com.trail2.data.remote.dto.RouteCreateDto
 import com.trail2.data.remote.dto.RouteResponseDto
 import com.trail2.data.remote.dto.RouteUpdateDto
@@ -76,5 +77,5 @@ interface RouteApi {
     ): PaginatedResponseDto<UserProfileDto>
 
     @GET("regions")
-    suspend fun getRegions(): List<String>
+    suspend fun getRegions(): List<RegionInfoDto>
 }
