@@ -357,6 +357,20 @@ fun RouteDetailScreen(
                 Spacer(Modifier.height(8.dp))
                 Text(route.description, fontSize = 14.sp, lineHeight = 22.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.85f))
 
+                // ── Точки маршрута ──────────────────────────────────
+                val waypoints = route.waypoints
+                if (!waypoints.isNullOrEmpty()) {
+                    Spacer(Modifier.height(20.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(16.dp))
+                    Text("Точки маршрута", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                    Spacer(Modifier.height(10.dp))
+                    waypoints.forEachIndexed { idx, wp ->
+                        WaypointCard(wp = wp, number = idx + 1)
+                        if (idx < waypoints.lastIndex) Spacer(Modifier.height(10.dp))
+                    }
+                }
+
                 Spacer(Modifier.height(16.dp))
 
                 if (route.tags.isNotEmpty()) {
@@ -599,6 +613,43 @@ fun RouteDetailScreen(
                 reportingCommentId = null
             }
         )
+    }
+}
+
+@Composable
+fun WaypointCard(wp: com.trail2.data.Waypoint, number: Int) {
+    val dotColor = when (number) {
+        1 -> Color(0xFF52B788)
+        else -> Color(0xFF457B9D)
+    }
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(dotColor),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                if (number == 1) "▶" else number.toString(),
+                fontSize = 12.sp,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(wp.name, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            if (!wp.description.isNullOrBlank()) {
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    wp.description,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
