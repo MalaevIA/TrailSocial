@@ -104,14 +104,20 @@ fun GeneratedRouteDto.toDomain() = GeneratedRoute(
     elevationGainM = elevationGainM?.toInt() ?: 0,
     durationMin = durationMinutes ?: 0,
     difficulty = difficulty ?: "MODERATE",
-    points = waypoints?.map { wp ->
-        RoutePoint(
-            lat = wp.lat,
-            lon = wp.lng,
-            title = wp.name,
-            description = wp.description ?: "",
-            type = "waypoint"
-        )
+    points = waypoints?.let { wps ->
+        wps.mapIndexed { idx, wp ->
+            RoutePoint(
+                lat = wp.lat,
+                lon = wp.lng,
+                title = wp.name,
+                description = wp.description ?: "",
+                type = when (idx) {
+                    0 -> "start"
+                    wps.lastIndex -> "finish"
+                    else -> "waypoint"
+                }
+            )
+        }
     } ?: emptyList(),
     tips = tips,
     tags = tags,

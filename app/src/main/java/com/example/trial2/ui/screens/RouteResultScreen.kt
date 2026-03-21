@@ -506,6 +506,7 @@ private fun RouteDetailsPanel(
 
         // Точки маршрута
         Text(stringResource(R.string.result_waypoints), fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(4.dp))
         route.points.forEachIndexed { idx, point ->
             RoutePointCard(point = point, number = idx + 1)
         }
