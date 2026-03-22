@@ -273,6 +273,7 @@
     <string name="setup_registering">Создаём профиль…</string>
     <string name="setup_register">Зарегистрироваться</string>
     <string name="setup_skip">Войти позже / использовать без аккаунта</string>
+    <string name="setup_add_avatar">Добавить фото профиля</string>
     <string name="setup_preferences">Ваши предпочтения</string>
     <string name="setup_cities_selected">%d город(а) выбрано</string>
     <string name="setup_interests_selected">%d интереса выбрано</string>
@@ -282,6 +283,10 @@
     <string name="settings_change_email">Изменить email</string>
     <string name="settings_new_email">Новый email</string>
     <string name="settings_current_password">Текущий пароль</string>
+    <string name="settings_change_password">Изменить пароль</string>
+    <string name="settings_new_password">Новый пароль</string>
+    <string name="settings_confirm_password">Повторите новый пароль</string>
+    <string name="settings_passwords_mismatch">Пароли не совпадают</string>
     <string name="settings_delete_account">Удалить аккаунт</string>
     <string name="settings_delete_account_message">Аккаунт и все данные будут удалены без возможности восстановления. Введите пароль для подтверждения.</string>
     <string name="settings_delete_confirm">Удалить</string>

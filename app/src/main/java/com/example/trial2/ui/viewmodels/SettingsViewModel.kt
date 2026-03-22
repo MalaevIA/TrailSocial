@@ -20,6 +20,9 @@ data class SettingsUiState(
     val isChangingEmail: Boolean = false,
     val changeEmailError: String? = null,
     val changeEmailSuccess: Boolean = false,
+    val isChangingPassword: Boolean = false,
+    val changePasswordError: String? = null,
+    val changePasswordSuccess: Boolean = false,
     val isDeletingAccount: Boolean = false,
     val deleteAccountError: String? = null
 )
@@ -61,6 +64,21 @@ class SettingsViewModel @Inject constructor(
 
     fun resetChangeEmailState() {
         _uiState.update { it.copy(changeEmailError = null, changeEmailSuccess = false) }
+    }
+
+    fun changePassword(currentPassword: String, newPassword: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isChangingPassword = true, changePasswordError = null, changePasswordSuccess = false) }
+            when (val result = userRepository.changePassword(currentPassword, newPassword)) {
+                is ApiResult.Success -> _uiState.update { it.copy(isChangingPassword = false, changePasswordSuccess = true) }
+                is ApiResult.Error -> _uiState.update { it.copy(isChangingPassword = false, changePasswordError = result.message) }
+                is ApiResult.NetworkError -> _uiState.update { it.copy(isChangingPassword = false, changePasswordError = "Нет подключения к интернету") }
+            }
+        }
+    }
+
+    fun resetChangePasswordState() {
+        _uiState.update { it.copy(changePasswordError = null, changePasswordSuccess = false) }
     }
 
     fun deleteAccount(currentPassword: String) {

@@ -1,19 +1,35 @@
 package com.trail2.ui.screens.onboarding
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.trail2.R
 
 import androidx.compose.ui.unit.dp
@@ -36,10 +52,15 @@ fun ProfileSetupScreen(
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onTogglePasswordVisible: () -> Unit,
+    onAvatarSelected: (Uri) -> Unit = {},
     onFinish: () -> Unit,
     onSkip: () -> Unit,
     onBack: () -> Unit
 ) {
+    val avatarPickerLauncher = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        uri?.let { onAvatarSelected(it) }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
 
         OnboardingTopBar(progress = progress, onBack = onBack)
@@ -57,7 +78,19 @@ fun ProfileSetupScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                // ── Аватар ───────────────────────
+                AvatarPicker(
+                    avatarUri = state.avatarUri,
+                    displayName = state.nameInput,
+                    onClick = { avatarPickerLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly)) }
+                )
+
+                Spacer(Modifier.height(20.dp))
 
                 // ── Имя ─────────────────────────
                 OnboardingTextField(
@@ -245,4 +278,60 @@ private fun SummaryRow(emoji: String, text: String) {
         Spacer(Modifier.width(6.dp))
         Text(text, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+@Composable
+private fun AvatarPicker(
+    avatarUri: Uri?,
+    displayName: String,
+    onClick: () -> Unit
+) {
+    val context = LocalContext.current
+    Box(
+        modifier = Modifier
+            .size(96.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.secondaryContainer)
+            .border(3.dp, MaterialTheme.colorScheme.primary, CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        if (avatarUri != null) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(avatarUri)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            val initial = displayName.trim().firstOrNull()?.uppercase() ?: "?"
+            Text(initial, fontSize = 36.sp, fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer)
+        }
+        // Camera icon overlay
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primary),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Filled.CameraAlt,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+    Spacer(Modifier.height(6.dp))
+    Text(
+        stringResource(R.string.setup_add_avatar),
+        fontSize = 12.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
 }

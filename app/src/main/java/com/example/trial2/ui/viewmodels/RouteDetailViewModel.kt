@@ -274,6 +274,27 @@ class RouteDetailViewModel @Inject constructor(
         }
     }
 
+    fun toggleCommentLike(commentId: String) {
+        val comment = _uiState.value.comments.find { it.id == commentId } ?: return
+        viewModelScope.launch {
+            val result = if (comment.isLiked) {
+                commentRepository.unlikeComment(commentId)
+            } else {
+                commentRepository.likeComment(commentId)
+            }
+            if (result is ApiResult.Success) {
+                _uiState.update { state ->
+                    state.copy(comments = state.comments.map {
+                        if (it.id == commentId) it.copy(
+                            isLiked = !it.isLiked,
+                            likesCount = it.likesCount + if (it.isLiked) -1 else 1
+                        ) else it
+                    })
+                }
+            }
+        }
+    }
+
     fun adminDeleteComment(commentId: String) {
         viewModelScope.launch {
             when (adminRepository.deleteComment(commentId)) {

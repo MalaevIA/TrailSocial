@@ -48,8 +48,12 @@ class FeedViewModel @Inject constructor(
                 _uiState.update { it.copy(isLoggedIn = loggedIn) }
                 if (loggedIn) {
                     loadFeed()
+                    loadRecommended()
                 } else {
-                    _uiState.update { it.copy(feedState = FeedTabState()) }
+                    _uiState.update { it.copy(
+                        feedState = FeedTabState(),
+                        recommendedState = FeedTabState()
+                    )}
                 }
             }
         }

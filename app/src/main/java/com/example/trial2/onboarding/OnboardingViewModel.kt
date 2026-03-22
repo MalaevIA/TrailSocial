@@ -1,9 +1,13 @@
 package com.trail2.onboarding
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.trail2.data.remote.ApiResult
 import com.trail2.data.repository.AuthRepository
+import com.trail2.data.repository.UploadRepository
+import com.trail2.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -27,13 +31,16 @@ data class OnboardingUiState(
     val nameError: String? = null,
     val emailError: String? = null,
     val passwordError: String? = null,
-    val usernameError: String? = null
+    val usernameError: String? = null,
+    val avatarUri: Uri? = null
 )
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val repo: OnboardingRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val uploadRepository: UploadRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OnboardingUiState())
@@ -97,8 +104,9 @@ class OnboardingViewModel @Inject constructor(
     fun onPasswordChange(v: String) = _uiState.update { it.copy(passwordInput = v, passwordError = null) }
     fun onUsernameChange(v: String) = _uiState.update { it.copy(usernameInput = v, usernameError = null) }
     fun togglePasswordVisible() = _uiState.update { it.copy(passwordVisible = !it.passwordVisible) }
+    fun onAvatarSelected(uri: Uri) = _uiState.update { it.copy(avatarUri = uri) }
 
-    fun finishOnboarding() {
+    fun finishOnboarding(context: Context) {
         if (!validateProfile()) return
         val state = _uiState.value
         val finalAnswers = state.answers.copy(
@@ -120,6 +128,14 @@ class OnboardingViewModel @Inject constructor(
                 displayName = state.nameInput.trim()
             )) {
                 is ApiResult.Success -> {
+                    // Upload avatar if selected (best-effort — don't block completion on failure)
+                    val avatarUri = _uiState.value.avatarUri
+                    if (avatarUri != null) {
+                        when (val uploadResult = uploadRepository.uploadPhoto(avatarUri, context)) {
+                            is ApiResult.Success -> userRepository.updateMe(avatarUrl = uploadResult.data)
+                            else -> { /* ignore upload errors during onboarding */ }
+                        }
+                    }
                     repo.markCompleted()
                     _isOnboardingCompleted.value = true
                     _uiState.update { it.copy(isLoading = false, isCompleted = true) }

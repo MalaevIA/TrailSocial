@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
 import com.trail2.onboarding.OnboardingStep
 import com.trail2.onboarding.OnboardingViewModel
 
@@ -24,6 +25,7 @@ fun OnboardingNavGraph(
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     // Когда онбординг завершён → уведомляем родителя
     LaunchedEffect(state.isCompleted) {
@@ -84,7 +86,8 @@ fun OnboardingNavGraph(
                 onEmailChange = { viewModel.onEmailChange(it) },
                 onPasswordChange = { viewModel.onPasswordChange(it) },
                 onTogglePasswordVisible = { viewModel.togglePasswordVisible() },
-                onFinish = { viewModel.finishOnboarding() },
+                onAvatarSelected = { viewModel.onAvatarSelected(it) },
+                onFinish = { viewModel.finishOnboarding(context) },
                 onSkip = { viewModel.skipOnboarding() },
                 onBack = { viewModel.prevStep() }
             )

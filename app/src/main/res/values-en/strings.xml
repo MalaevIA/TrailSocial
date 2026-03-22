@@ -273,6 +273,7 @@
     <string name="setup_registering">Creating profile…</string>
     <string name="setup_register">Sign up</string>
     <string name="setup_skip">Sign in later / use without account</string>
+    <string name="setup_add_avatar">Add profile photo</string>
     <string name="setup_preferences">Your preferences</string>
     <string name="setup_cities_selected">%d city(ies) selected</string>
     <string name="setup_interests_selected">%d interest(s) selected</string>
@@ -282,6 +283,10 @@
     <string name="settings_change_email">Change email</string>
     <string name="settings_new_email">New email</string>
     <string name="settings_current_password">Current password</string>
+    <string name="settings_change_password">Change password</string>
+    <string name="settings_new_password">New password</string>
+    <string name="settings_confirm_password">Confirm new password</string>
+    <string name="settings_passwords_mismatch">Passwords do not match</string>
     <string name="settings_delete_account">Delete account</string>
     <string name="settings_delete_account_message">Your account and all data will be permanently deleted. Enter your password to confirm.</string>
     <string name="settings_delete_confirm">Delete</string>

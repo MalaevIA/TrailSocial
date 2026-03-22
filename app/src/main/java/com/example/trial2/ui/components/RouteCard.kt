@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.trail2.ui.theme.*
 import com.trail2.ui.util.RoutePhotoPlaceholder
 import com.trail2.ui.util.formatDate
@@ -59,7 +60,7 @@ fun RouteCard(
                 modifier = Modifier.fillMaxWidth().padding(12.dp).clickable { onAuthorClick() },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                UserAvatar(colorHex = route.author.avatarUrl, name = route.author.name, size = 38)
+                UserAvatar(avatarUrl = route.author.avatarUrl, name = route.author.name, size = 38)
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(route.author.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
@@ -201,13 +202,28 @@ fun RouteCard(
 }
 
 @Composable
-fun UserAvatar(colorHex: String, name: String, size: Int) {
-    val color = try { Color(android.graphics.Color.parseColor("#$colorHex")) } catch (e: Exception) { ForestGreen }
+fun UserAvatar(avatarUrl: String, name: String, size: Int) {
+    val context = LocalContext.current
+    var loadFailed by remember(avatarUrl) { mutableStateOf(false) }
     Box(
-        modifier = Modifier.size(size.dp).clip(CircleShape).background(color),
+        modifier = Modifier.size(size.dp).clip(CircleShape).background(ForestGreen),
         contentAlignment = Alignment.Center
     ) {
-        Text(name.take(1), color = Color.White, fontSize = (size * 0.4).sp, fontWeight = FontWeight.Bold)
+        val isValidUrl = avatarUrl.startsWith("http://") || avatarUrl.startsWith("https://")
+        if (isValidUrl && !loadFailed) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(avatarUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                onError = { loadFailed = true }
+            )
+        } else {
+            Text(name.take(1).uppercase(), color = Color.White, fontSize = (size * 0.4).sp, fontWeight = FontWeight.Bold)
+        }
     }
 }
 

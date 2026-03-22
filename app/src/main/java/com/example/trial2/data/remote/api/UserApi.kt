@@ -1,6 +1,7 @@
 package com.trail2.data.remote.api
 
 import com.trail2.data.remote.dto.ChangeEmailRequest
+import com.trail2.data.remote.dto.ChangePasswordRequest
 import com.trail2.data.remote.dto.DeleteAccountRequest
 import com.trail2.data.remote.dto.PaginatedResponseDto
 import com.trail2.data.remote.dto.RouteResponseDto
@@ -65,6 +66,9 @@ interface UserApi {
 
     @PUT("users/me/email")
     suspend fun changeEmail(@Body request: ChangeEmailRequest): Response<Unit>
+
+    @PUT("users/me/password")
+    suspend fun changePassword(@Body request: ChangePasswordRequest): Response<Unit>
 
     @HTTP(method = "DELETE", path = "users/me", hasBody = true)
     suspend fun deleteAccount(@Body request: DeleteAccountRequest): Response<Unit>

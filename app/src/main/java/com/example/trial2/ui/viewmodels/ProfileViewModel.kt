@@ -93,7 +93,7 @@ class ProfileViewModel @Inject constructor(
                     val avatarPath = uploadResult.data
                     when (val updateResult = userRepository.updateMe(avatarUrl = avatarPath)) {
                         is ApiResult.Success -> _uiState.update {
-                            it.copy(isUploadingAvatar = false, user = it.user?.copy(avatarUrl = avatarPath))
+                            it.copy(isUploadingAvatar = false, user = updateResult.data)
                         }
                         is ApiResult.Error -> _uiState.update { it.copy(isUploadingAvatar = false, avatarError = updateResult.message) }
                         is ApiResult.NetworkError -> _uiState.update { it.copy(isUploadingAvatar = false, avatarError = "Нет подключения к интернету") }

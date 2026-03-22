@@ -304,7 +304,7 @@ fun RouteDetailScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable { onAuthorClick(route.author.id) }
                 ) {
-                    UserAvatar(colorHex = route.author.avatarUrl, name = route.author.name, size = 44)
+                    UserAvatar(avatarUrl = route.author.avatarUrl, name = route.author.name, size = 44)
                     Spacer(Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(route.author.name, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
@@ -514,6 +514,7 @@ fun RouteDetailScreen(
                         CommentItem(
                             comment = comment,
                             isAdmin = uiState.isAdmin,
+                            onLikeClick = { vm.toggleCommentLike(comment.id) },
                             onReport = { reportingCommentId = comment.id },
                             onAdminDelete = { adminDeletingCommentId = comment.id }
                         )
@@ -669,11 +670,12 @@ fun DetailStatCard(emoji: String, label: String, value: String, modifier: Modifi
 fun CommentItem(
     comment: com.trail2.data.Comment,
     isAdmin: Boolean = false,
+    onLikeClick: () -> Unit = {},
     onReport: () -> Unit = {},
     onAdminDelete: () -> Unit = {}
 ) {
     Row(modifier = Modifier.fillMaxWidth()) {
-        UserAvatar(colorHex = comment.author.avatarUrl, name = comment.author.name, size = 36)
+        UserAvatar(avatarUrl = comment.author.avatarUrl, name = comment.author.name, size = 36)
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -688,7 +690,7 @@ fun CommentItem(
                 Icon(
                     if (comment.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                     null,
-                    modifier = Modifier.size(14.dp),
+                    modifier = Modifier.size(14.dp).clickable(onClick = onLikeClick),
                     tint = if (comment.isLiked) Color(0xFFE63946) else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.width(3.dp))

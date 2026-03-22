@@ -33,16 +33,26 @@ class NotificationWebSocketClient @Inject constructor(
 
     private var socket: WebSocket? = null
     private var shouldReconnect = false
+    private var reconnectAttempt = 0
 
     fun start() {
         shouldReconnect = true
+        reconnectAttempt = 0
         connect()
     }
 
     fun stop() {
         shouldReconnect = false
+        reconnectAttempt = 0
         socket?.close(1000, null)
         socket = null
+    }
+
+    private fun reconnectDelay(): Long {
+        // Exponential backoff: 5s, 10s, 20s, 40s, max 60s
+        val delay = (5_000L * (1 shl reconnectAttempt.coerceAtMost(3)))
+        reconnectAttempt++
+        return delay.coerceAtMost(60_000L)
     }
 
     private fun connect() {
@@ -58,6 +68,7 @@ class NotificationWebSocketClient @Inject constructor(
         val request = Request.Builder().url(wsUrl).build()
         socket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(ws: WebSocket, response: Response) {
+                reconnectAttempt = 0
                 val token = tokenManager.getAccessToken() ?: return
                 ws.send("""{"token":"$token"}""")
             }
@@ -76,8 +87,8 @@ class NotificationWebSocketClient @Inject constructor(
             override fun onClosed(ws: WebSocket, code: Int, reason: String) {
                 if (shouldReconnect && code != 4001) {
                     scope.launch {
-                        delay(5_000)
-                        connect()
+                        delay(reconnectDelay())
+                        if (shouldReconnect) connect()
                     }
                 }
             }
@@ -85,8 +96,8 @@ class NotificationWebSocketClient @Inject constructor(
             override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
                 if (shouldReconnect) {
                     scope.launch {
-                        delay(5_000)
-                        connect()
+                        delay(reconnectDelay())
+                        if (shouldReconnect) connect()
                     }
                 }
             }

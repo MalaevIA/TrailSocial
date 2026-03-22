@@ -38,6 +38,7 @@ fun SettingsScreen(
     val uiState by vm.uiState.collectAsStateWithLifecycle()
 
     var showChangeEmailDialog by remember { mutableStateOf(false) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
 
     if (showChangeEmailDialog) {
@@ -49,6 +50,19 @@ fun SettingsScreen(
             onDismiss = {
                 showChangeEmailDialog = false
                 vm.resetChangeEmailState()
+            }
+        )
+    }
+
+    if (showChangePasswordDialog) {
+        ChangePasswordDialog(
+            isLoading = uiState.isChangingPassword,
+            error = uiState.changePasswordError,
+            success = uiState.changePasswordSuccess,
+            onConfirm = { current, new -> vm.changePassword(current, new) },
+            onDismiss = {
+                showChangePasswordDialog = false
+                vm.resetChangePasswordState()
             }
         )
     }
@@ -186,6 +200,26 @@ fun SettingsScreen(
                     Icon(Icons.Outlined.Email, contentDescription = null, tint = ForestGreen, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.width(16.dp))
                     Text(stringResource(R.string.settings_change_email), fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(start = 56.dp, end = 16.dp))
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showChangePasswordDialog = true },
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Outlined.Lock, contentDescription = null, tint = ForestGreen, modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(16.dp))
+                    Text(stringResource(R.string.settings_change_password), fontSize = 15.sp, fontWeight = FontWeight.Medium)
                 }
             }
 
@@ -334,6 +368,82 @@ private fun ChangeEmailDialog(
             TextButton(
                 onClick = { onConfirm(newEmail.trim(), password) },
                 enabled = !isLoading && newEmail.isNotBlank() && password.isNotBlank()
+            ) {
+                if (isLoading) CircularProgressIndicator(Modifier.size(16.dp))
+                else Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isLoading) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun ChangePasswordDialog(
+    isLoading: Boolean,
+    error: String?,
+    success: Boolean,
+    onConfirm: (String, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var currentPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+
+    LaunchedEffect(success) {
+        if (success) onDismiss()
+    }
+
+    val passwordMismatch = confirmPassword.isNotBlank() && newPassword != confirmPassword
+
+    AlertDialog(
+        onDismissRequest = { if (!isLoading) onDismiss() },
+        title = { Text(stringResource(R.string.settings_change_password)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = currentPassword,
+                    onValueChange = { currentPassword = it },
+                    label = { Text(stringResource(R.string.settings_current_password)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = newPassword,
+                    onValueChange = { newPassword = it },
+                    label = { Text(stringResource(R.string.settings_new_password)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = { Text(stringResource(R.string.settings_confirm_password)) },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
+                    isError = passwordMismatch,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (passwordMismatch) {
+                    Text(stringResource(R.string.settings_passwords_mismatch), color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                }
+                if (error != null) {
+                    Text(error, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(currentPassword, newPassword) },
+                enabled = !isLoading && currentPassword.isNotBlank() && newPassword.isNotBlank() && newPassword == confirmPassword
             ) {
                 if (isLoading) CircularProgressIndicator(Modifier.size(16.dp))
                 else Text(stringResource(R.string.save))

@@ -2,6 +2,7 @@ package com.trail2.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.trail2.auth.TokenManager
 import com.trail2.data.Difficulty
 import com.trail2.data.RegionInfo
 import com.trail2.data.TrailRoute
@@ -14,6 +15,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -32,7 +34,8 @@ data class ExploreUiState(
 
 @HiltViewModel
 class ExploreViewModel @Inject constructor(
-    private val routeRepository: RouteRepository
+    private val routeRepository: RouteRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ExploreUiState())
@@ -43,6 +46,17 @@ class ExploreViewModel @Inject constructor(
     init {
         loadRegions()
         loadAllRoutes()
+        viewModelScope.launch {
+            tokenManager.isLoggedIn.drop(1).collect {
+                _uiState.update { it.copy(
+                    routes = emptyList(),
+                    query = "",
+                    selectedRegion = null,
+                    isSearching = false
+                )}
+                loadAllRoutes()
+            }
+        }
     }
 
     private fun loadRegions() {

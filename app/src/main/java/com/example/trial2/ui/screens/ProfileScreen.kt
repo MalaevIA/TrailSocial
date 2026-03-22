@@ -124,7 +124,8 @@ fun ProfileScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         val avatarUrl = user?.avatarUrl?.takeIf { it.isNotBlank() }
-                        if (avatarUrl != null) {
+                        var avatarLoadFailed by remember(avatarUrl) { mutableStateOf(false) }
+                        if (avatarUrl != null && !avatarLoadFailed) {
                             AsyncImage(
                                 model = ImageRequest.Builder(context)
                                     .data(routePhotoUrl(avatarUrl))
@@ -132,7 +133,8 @@ fun ProfileScreen(
                                     .build(),
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize(),
+                                onError = { avatarLoadFailed = true }
                             )
                         } else {
                             Text(displayName.take(1).uppercase(), fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
