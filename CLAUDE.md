@@ -51,7 +51,12 @@ FollowList(userId, type), RouteMapPicker
 
 `AppNavigation` checks auth state: `isOnboardingCompleted` (`null` = splash, `false` = onboarding, `true` = check login). `MainAppContent()` renders a `Scaffold` + `NavigationBar` with 4 tabs (Feed, Explore, AI-Route, Profile). Non-tab screens are rendered with early `return` before the Scaffold.
 
-`RouteBuilderViewModel` is hoisted to `MainAppContent` level so Navigation can call `resetFully()` when leaving RouteResultScreen. Route map data is passed via private `RouteMapData` held in `MainAppContent` state, not via the `Screen` sealed class.
+Three ViewModels are hoisted to `MainAppContent` level (not screen-level):
+- `RouteBuilderViewModel` — so `resetFully()` can be called when leaving `RouteResultScreen`
+- `FeedViewModel` — so `syncRoute(route)` can update feed likes/saves on return from `RouteDetailScreen`
+- `RouteDetailViewModel` — read in a `LaunchedEffect(currentScreen)` to sync the viewed route back to the feed
+
+Route map data (from `RouteMapPickerScreen`) is passed via private `RouteMapData` held in `MainAppContent` state, not via the `Screen` sealed class. Deep link support: `AppNavigation(initialRouteId)` navigates directly to `Screen.RouteDetail` on first composition.
 
 ### Authentication
 JWT-based auth with encrypted token storage:
@@ -65,9 +70,9 @@ JWT-based auth with encrypted token storage:
 All data flows through Retrofit. Room was removed — there is no local database.
 
 **DI modules** (`com.trail2.di`):
-- `NetworkModule` — OkHttp (30s connect, 120s read, 60s write), Retrofit, all API interfaces
+- `NetworkModule` — OkHttp (30s connect, 120s read, 60s write), Retrofit, all API interfaces; also provides `Json` instance (`ignoreUnknownKeys`, `coerceInputValues`, `encodeDefaults`)
 - `AuthModule` — `TokenManager`
-- `DataStoreModule` — `DataStore<Preferences>` for onboarding/settings
+- `DataStoreModule` — single `DataStore<Preferences>` (file `"onboarding_prefs"`) shared by onboarding, settings, route cache, and AI history — not designed for large data
 
 **API interfaces** in `data/remote/api/`: `AuthApi`, `RouteApi`, `UserApi`, `CommentApi`, `NotificationApi`, `AiRouteApi`, `UploadApi`, `ReportApi`, `AdminApi`
 
@@ -87,9 +92,16 @@ All data flows through Retrofit. Room was removed — there is no local database
 - `ReportDialog` composable (`ui/components/ReportDialog.kt`) — reusable modal for filing reports
 - `RouteMapView` composable (`ui/components/RouteMapView.kt`) — reusable Yandex MapView with route polyline, start/end markers, and intermediate dot markers; takes GeoJSON `[lng, lat]` pairs; used in `RouteDetailScreen` and `RouteResultScreen`
 
+### Offline Cache
+`RouteCacheRepository` (`data/repository/`) serializes up to 20 `TrailRoute` domain objects to DataStore using `json.encodeToString(ListSerializer(TrailRoute.serializer()), ...)`. `FeedViewModel` saves on `ApiResult.Success` and loads on `ApiResult.NetworkError`. All domain models used in the cache (`TrailRoute`, `User`, `GeoJsonLineString`, `Waypoint`, `Difficulty`, `RouteStatus`) are annotated `@Serializable`.
+
+### Skeleton Loading
+`SkeletonComponents.kt` (`ui/components/`) provides: `RouteCardSkeleton`, `RouteCardSkeletonList`, `RouteDetailSkeleton`, `UserProfileSkeleton`, `ExploreSkeleton`. Use instead of `CircularProgressIndicator` for initial screen loads. Show when `isLoading && items.isEmpty()`.
+
 ### AI Route Builder
 All AI-route classes live in the `ai_route/` package (not `ui/viewmodels/`):
 - `RouteBuilderModels.kt` — form enums (`TripPurpose`, `TripDuration`, `TripDistance`, `Terrain`, `GroupType`, `Pace`), `RouteBuilderForm`, `GeneratedRoute`, `RoutePoint`, and `DEMO_ROUTE` (offline fallback constant)
+- `AiHistoryRepository` — persists generated routes to DataStore; exposed via `RouteBuilderViewModel.history: StateFlow<List<GeneratedRoute>>`; `replayFromHistory(route)` restores a past result
 - `RouteBuilderViewModel` — hoisted to `MainAppContent` level (see Navigation section)
 - `RouteBuilderRepository` — async polling logic
 
@@ -148,7 +160,7 @@ Defined in `ui/theme/Theme.kt`, import as needed — do not use raw hex literals
 ### Key Enums
 - `Difficulty`: EASY, MODERATE, HARD, EXPERT — used in feed filters and route creation
 - `RouteStatus`: DRAFT, PRIVATE, PUBLISHED
-- `NotificationType`: NEW_FOLLOWER, ROUTE_LIKE, NEW_COMMENT
+- `NotificationType`: NEW_FOLLOWER, ROUTE_LIKE, NEW_COMMENT, NEW_ROUTE
 - `FollowListType`: FOLLOWERS, FOLLOWING — used by `FollowListScreen`
 
 ### Common Pitfalls
@@ -159,3 +171,5 @@ Defined in `ui/theme/Theme.kt`, import as needed — do not use raw hex literals
 - MapKit route/suggest callbacks arrive on a background thread — dispatch state updates via `Handler(Looper.getMainLooper()).post { }`
 - Race conditions in StateFlow `.update {}`: always read current state inside the lambda (e.g., `state.route?.let { current -> ... }` not a captured variable)
 - Screens using `AnimatedContent` in navigation are recreated on every visit — use `LaunchedEffect(Unit)` for data reload
+- **Never use `RouteMapView` (Yandex `MapView`) inside `LazyColumn`** — use `RouteMapPreview` (Canvas-based) instead. `RouteMapPreview` requires `geometry != null` with ≥2 coordinates; when only `startLat/Lng`+`endLat/Lng` are available, construct a 2-point `GeoJsonLineString` as fallback before passing to `RouteMapPreview`
+- `TokenAuthenticator` distinguishes 401/403 on refresh (throws `TokenExpiredException` → clears tokens) from server/network errors (returns `null` → aborts retry without clearing tokens)

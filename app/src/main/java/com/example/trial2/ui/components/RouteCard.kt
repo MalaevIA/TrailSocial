@@ -48,6 +48,16 @@ fun RouteCard(
     onAuthorClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    // Use full geometry when available; fall back to 2-point straight line from start/end coords
+    val effectiveGeometry = remember(route.id) {
+        route.geometry ?: run {
+            val lat1 = route.startLat; val lng1 = route.startLng
+            val lat2 = route.endLat; val lng2 = route.endLng
+            if (lat1 != null && lng1 != null && lat2 != null && lng2 != null)
+                GeoJsonLineString(coordinates = listOf(listOf(lng1, lat1), listOf(lng2, lat2)))
+            else null
+        }
+    }
     Card(
         modifier = modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
@@ -73,13 +83,13 @@ fun RouteCard(
             Box(modifier = Modifier.fillMaxWidth().height(200.dp)) {
                 if (route.photos.isEmpty()) {
                     // No photos — lightweight Canvas preview (never use MapView inside LazyColumn)
-                    RouteMapPreview(geometry = route.geometry, modifier = Modifier.fillMaxSize())
+                    RouteMapPreview(geometry = effectiveGeometry, modifier = Modifier.fillMaxSize())
                 } else if (route.photos.size == 1) {
                     // Single photo with map fallback on error
                     val photoUrl = routePhotoUrl(route.photos[0])
                     var failed by remember(route.id, photoUrl) { mutableStateOf(false) }
                     if (failed) {
-                        RouteMapPreview(geometry = route.geometry, modifier = Modifier.fillMaxSize())
+                        RouteMapPreview(geometry = effectiveGeometry, modifier = Modifier.fillMaxSize())
                     } else {
                         RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
                         AsyncImage(
@@ -98,7 +108,7 @@ fun RouteCard(
                     var anyFailed by remember(route.id, route.photos) { mutableStateOf(false) }
                     val pagerState = rememberPagerState { route.photos.size }
                     if (anyFailed) {
-                        RouteMapPreview(geometry = route.geometry, modifier = Modifier.fillMaxSize())
+                        RouteMapPreview(geometry = effectiveGeometry, modifier = Modifier.fillMaxSize())
                     } else {
                         HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                             Box(modifier = Modifier.fillMaxSize()) {
