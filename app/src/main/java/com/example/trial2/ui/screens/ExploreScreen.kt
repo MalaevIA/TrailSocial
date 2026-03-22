@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.trail2.data.Difficulty
 import com.trail2.data.RegionInfo
 import com.trail2.ui.theme.ForestGreen
 import com.trail2.ui.util.routePhotoUrl
@@ -56,6 +57,37 @@ fun ExploreScreen(
                     leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null, tint = ForestGreen) },
                     shape = RoundedCornerShape(24.dp),
                     singleLine = true
+                )
+                Spacer(Modifier.height(10.dp))
+                val filterLabels = listOf(
+                    stringResource(R.string.filter_all),
+                    stringResource(R.string.filter_easy),
+                    stringResource(R.string.filter_moderate),
+                    stringResource(R.string.filter_hard),
+                    stringResource(R.string.filter_expert)
+                )
+                val selectedFilterIndex = when (uiState.filterDifficulty) {
+                    Difficulty.EASY -> 1
+                    Difficulty.MODERATE -> 2
+                    Difficulty.HARD -> 3
+                    Difficulty.EXPERT -> 4
+                    else -> 0
+                }
+                FilterChipsRow(
+                    filters = filterLabels,
+                    selectedFilter = filterLabels[selectedFilterIndex],
+                    onFilterSelected = { filter ->
+                        val index = filterLabels.indexOf(filter)
+                        vm.setFilter(
+                            when (index) {
+                                1 -> Difficulty.EASY
+                                2 -> Difficulty.MODERATE
+                                3 -> Difficulty.HARD
+                                4 -> Difficulty.EXPERT
+                                else -> null
+                            }
+                        )
+                    }
                 )
             }
         }
@@ -104,7 +136,8 @@ fun ExploreScreen(
                     }
                 }
 
-                if (uiState.selectedRegion != null) {
+                val selectedRegion = uiState.selectedRegion
+                if (selectedRegion != null) {
                     item {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = { vm.clearRegion() }) {
@@ -115,7 +148,7 @@ fun ExploreScreen(
                                 )
                             }
                             Text(
-                                uiState.selectedRegion,
+                                selectedRegion,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 15.sp
                             )

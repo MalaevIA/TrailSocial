@@ -164,11 +164,16 @@ class OnboardingViewModel @Inject constructor(
             else -> null
         }
         val passwordError = when {
-            s.passwordInput.length < 6 -> "Пароль — минимум 6 символов"
+            s.passwordInput.length < 8 -> "Пароль должен быть не менее 8 символов"
             else -> null
         }
-        if (nameError != null || emailError != null || passwordError != null) {
-            _uiState.update { it.copy(nameError = nameError, emailError = emailError, passwordError = passwordError) }
+        val usernameError = when {
+            s.usernameInput.isNotBlank() && !s.usernameInput.matches(Regex("^[a-zA-Z0-9_]{3,50}$")) ->
+                "Имя пользователя может содержать только латинские буквы, цифры и _"
+            else -> null
+        }
+        if (nameError != null || emailError != null || passwordError != null || usernameError != null) {
+            _uiState.update { it.copy(nameError = nameError, emailError = emailError, passwordError = passwordError, usernameError = usernameError) }
             return false
         }
         return true

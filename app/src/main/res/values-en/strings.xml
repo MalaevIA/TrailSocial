@@ -261,7 +261,7 @@
     <string name="setup_email">Email</string>
     <string name="setup_email_hint">your@email.com</string>
     <string name="setup_password">Password</string>
-    <string name="setup_password_hint">At least 6 characters</string>
+    <string name="setup_password_hint">At least 8 characters</string>
     <string name="setup_show_password">Show password</string>
     <string name="setup_registering">Creating profile…</string>
     <string name="setup_register">Sign up</string>
@@ -269,6 +269,15 @@
     <string name="setup_preferences">Your preferences</string>
     <string name="setup_cities_selected">%d city(ies) selected</string>
     <string name="setup_interests_selected">%d interest(s) selected</string>
+
+    <!-- Settings: account -->
+    <string name="settings_account">Account</string>
+    <string name="settings_change_email">Change email</string>
+    <string name="settings_new_email">New email</string>
+    <string name="settings_current_password">Current password</string>
+    <string name="settings_delete_account">Delete account</string>
+    <string name="settings_delete_account_message">Your account and all data will be permanently deleted. Enter your password to confirm.</string>
+    <string name="settings_delete_confirm">Delete</string>
 
     <!-- Admin panel -->
     <string name="admin_title">Admin Panel</string>

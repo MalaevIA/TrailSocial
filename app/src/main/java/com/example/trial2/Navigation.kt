@@ -237,7 +237,6 @@ fun MainAppContent() {
                         onRouteClick = { id -> currentScreen = Screen.RouteDetail(id) },
                         onNotificationsClick = { currentScreen = Screen.Notifications },
                         onCreateRouteClick = { currentScreen = Screen.RouteCreate },
-                        onSearchClick = { selectedTabIndex = 1; currentScreen = Screen.Explore },
                         onAuthorClick = { userId -> currentScreen = Screen.UserProfile(userId) }
                     )
                     1 -> ExploreScreen(

@@ -125,6 +125,6 @@ class RouteRepository @Inject constructor(
     }
 
     suspend fun getRegions(): ApiResult<List<RegionInfo>> = safeApiCall {
-        routeApi.getRegions().map { it.toDomain() }
+        routeApi.getRegions().items.map { it.toDomain() }
     }
 }

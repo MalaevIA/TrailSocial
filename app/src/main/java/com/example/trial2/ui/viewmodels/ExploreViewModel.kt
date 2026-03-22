@@ -2,6 +2,7 @@ package com.trail2.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.trail2.data.Difficulty
 import com.trail2.data.RegionInfo
 import com.trail2.data.TrailRoute
 import com.trail2.data.User
@@ -25,7 +26,8 @@ data class ExploreUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val isSearching: Boolean = false,
-    val selectedRegion: String? = null
+    val selectedRegion: String? = null,
+    val filterDifficulty: Difficulty? = null
 )
 
 @HiltViewModel
@@ -55,7 +57,7 @@ class ExploreViewModel @Inject constructor(
     private fun loadAllRoutes() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            when (val result = routeRepository.getRoutes()) {
+            when (val result = routeRepository.getRoutes(difficulty = _uiState.value.filterDifficulty)) {
                 is ApiResult.Success -> _uiState.update {
                     it.copy(routes = result.data.items, isLoading = false)
                 }
@@ -92,7 +94,7 @@ class ExploreViewModel @Inject constructor(
     fun searchByRegion(region: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, selectedRegion = region) }
-            when (val result = routeRepository.getRoutes(region = region)) {
+            when (val result = routeRepository.getRoutes(region = region, difficulty = _uiState.value.filterDifficulty)) {
                 is ApiResult.Success -> _uiState.update {
                     it.copy(routes = result.data.items, isLoading = false)
                 }
@@ -104,5 +106,11 @@ class ExploreViewModel @Inject constructor(
     fun clearRegion() {
         _uiState.update { it.copy(selectedRegion = null) }
         loadAllRoutes()
+    }
+
+    fun setFilter(difficulty: Difficulty?) {
+        _uiState.update { it.copy(filterDifficulty = difficulty) }
+        val region = _uiState.value.selectedRegion
+        if (region != null) searchByRegion(region) else loadAllRoutes()
     }
 }

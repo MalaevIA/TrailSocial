@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.trail2.auth.TokenManager
 import com.trail2.data.Notification
 import com.trail2.data.remote.ApiResult
+import com.trail2.data.remote.NotificationWebSocketClient
 import com.trail2.data.repository.NotificationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +25,8 @@ data class NotificationUiState(
 @HiltViewModel
 class NotificationViewModel @Inject constructor(
     private val notificationRepository: NotificationRepository,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val webSocketClient: NotificationWebSocketClient
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationUiState())
@@ -34,10 +36,17 @@ class NotificationViewModel @Inject constructor(
         viewModelScope.launch {
             tokenManager.isLoggedIn.collect { loggedIn ->
                 if (loggedIn) {
+                    webSocketClient.start()
                     loadUnreadCount()
                 } else {
+                    webSocketClient.stop()
                     _uiState.value = NotificationUiState()
                 }
+            }
+        }
+        viewModelScope.launch {
+            webSocketClient.events.collect {
+                _uiState.update { state -> state.copy(unreadCount = state.unreadCount + 1) }
             }
         }
     }

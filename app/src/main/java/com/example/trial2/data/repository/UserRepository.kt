@@ -5,6 +5,8 @@ import com.trail2.data.TrailRoute
 import com.trail2.data.User
 import com.trail2.data.remote.ApiResult
 import com.trail2.data.remote.api.UserApi
+import com.trail2.data.remote.dto.ChangeEmailRequest
+import com.trail2.data.remote.dto.DeleteAccountRequest
 import com.trail2.data.remote.dto.UpdateProfileRequest
 import com.trail2.data.remote.mappers.toDomain
 import com.trail2.data.remote.safeApiCall
@@ -63,5 +65,13 @@ class UserRepository @Inject constructor(
 
     suspend fun unfollow(userId: String): ApiResult<Unit> = safeApiCall {
         userApi.unfollow(userId)
+    }
+
+    suspend fun changeEmail(newEmail: String, password: String): ApiResult<Unit> = safeApiCall {
+        userApi.changeEmail(ChangeEmailRequest(newEmail, password))
+    }
+
+    suspend fun deleteAccount(currentPassword: String): ApiResult<Unit> = safeApiCall {
+        userApi.deleteAccount(DeleteAccountRequest(currentPassword))
     }
 }

@@ -261,7 +261,7 @@
     <string name="setup_email">Email</string>
     <string name="setup_email_hint">your@email.com</string>
     <string name="setup_password">Пароль</string>
-    <string name="setup_password_hint">Минимум 6 символов</string>
+    <string name="setup_password_hint">Минимум 8 символов</string>
     <string name="setup_show_password">Показать пароль</string>
     <string name="setup_registering">Создаём профиль…</string>
     <string name="setup_register">Зарегистрироваться</string>
@@ -269,6 +269,15 @@
     <string name="setup_preferences">Ваши предпочтения</string>
     <string name="setup_cities_selected">%d город(а) выбрано</string>
     <string name="setup_interests_selected">%d интереса выбрано</string>
+
+    <!-- Settings: account -->
+    <string name="settings_account">Аккаунт</string>
+    <string name="settings_change_email">Изменить email</string>
+    <string name="settings_new_email">Новый email</string>
+    <string name="settings_current_password">Текущий пароль</string>
+    <string name="settings_delete_account">Удалить аккаунт</string>
+    <string name="settings_delete_account_message">Аккаунт и все данные будут удалены без возможности восстановления. Введите пароль для подтверждения.</string>
+    <string name="settings_delete_confirm">Удалить</string>
 
     <!-- Admin panel -->
     <string name="admin_title">Админ-панель</string>

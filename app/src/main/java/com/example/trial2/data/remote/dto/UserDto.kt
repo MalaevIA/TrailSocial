@@ -46,3 +46,15 @@ data class ChangePasswordRequest(
     @SerialName("current_password") val currentPassword: String,
     @SerialName("new_password") val newPassword: String
 )
+
+@Serializable
+data class ChangeEmailRequest(
+    @SerialName("new_email") val newEmail: String,
+    val password: String
+)
+
+@Serializable
+data class DeleteAccountRequest(
+    @SerialName("current_password") val currentPassword: String,
+    @SerialName("new_password") val newPassword: String = ""
+)

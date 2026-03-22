@@ -77,5 +77,8 @@ interface RouteApi {
     ): PaginatedResponseDto<UserProfileDto>
 
     @GET("regions")
-    suspend fun getRegions(): List<RegionInfoDto>
+    suspend fun getRegions(
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 20
+    ): PaginatedResponseDto<RegionInfoDto>
 }

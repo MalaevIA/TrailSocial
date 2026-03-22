@@ -5,6 +5,7 @@ import com.trail2.BuildConfig
 import com.trail2.auth.AuthInterceptor
 import com.trail2.auth.TokenAuthenticator
 import com.trail2.auth.TokenManager
+import com.trail2.data.remote.NotificationWebSocketClient
 import com.trail2.data.remote.api.*
 import dagger.Module
 import dagger.Provides
@@ -96,4 +97,12 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAdminApi(retrofit: Retrofit): AdminApi = retrofit.create(AdminApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideNotificationWebSocketClient(
+        okHttpClient: OkHttpClient,
+        tokenManager: TokenManager,
+        json: Json
+    ): NotificationWebSocketClient = NotificationWebSocketClient(okHttpClient, tokenManager, json)
 }

@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -22,7 +21,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.trail2.data.Difficulty
 import com.trail2.ui.components.RouteCard
 import com.trail2.R
 import com.trail2.ui.theme.ForestGreen
@@ -35,7 +33,6 @@ fun FeedScreen(
     onRouteClick: (String) -> Unit,
     onNotificationsClick: () -> Unit = {},
     onCreateRouteClick: () -> Unit = {},
-    onSearchClick: () -> Unit = {},
     onAuthorClick: (String) -> Unit = {},
     feedVm: FeedViewModel = hiltViewModel(),
     notifVm: NotificationViewModel = hiltViewModel()
@@ -47,21 +44,6 @@ fun FeedScreen(
 
     val uiState by feedVm.uiState.collectAsStateWithLifecycle()
     val notifState by notifVm.uiState.collectAsStateWithLifecycle()
-
-    val filterLabels = listOf(
-        stringResource(R.string.filter_all),
-        stringResource(R.string.filter_easy),
-        stringResource(R.string.filter_moderate),
-        stringResource(R.string.filter_hard),
-        stringResource(R.string.filter_expert)
-    )
-    val selectedFilterIndex = when (uiState.filterDifficulty) {
-        Difficulty.EASY -> 1
-        Difficulty.MODERATE -> 2
-        Difficulty.HARD -> 3
-        Difficulty.EXPERT -> 4
-        else -> 0
-    }
 
     val listState = rememberLazyListState()
 
@@ -83,9 +65,6 @@ fun FeedScreen(
                 actions = {
                     IconButton(onClick = onCreateRouteClick) {
                         Icon(Icons.Default.Add, contentDescription = stringResource(R.string.feed_create_route))
-                    }
-                    IconButton(onClick = onSearchClick) {
-                        Icon(Icons.Outlined.Search, contentDescription = stringResource(R.string.feed_search))
                     }
                     IconButton(onClick = onNotificationsClick) {
                         BadgedBox(badge = {
@@ -126,25 +105,6 @@ fun FeedScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item {
-                    FilterChipsRow(
-                        filters = filterLabels,
-                        selectedFilter = filterLabels[selectedFilterIndex],
-                        onFilterSelected = { filter ->
-                            val index = filterLabels.indexOf(filter)
-                            feedVm.setFilter(
-                                when (index) {
-                                    1 -> Difficulty.EASY
-                                    2 -> Difficulty.MODERATE
-                                    3 -> Difficulty.HARD
-                                    4 -> Difficulty.EXPERT
-                                    else -> null
-                                }
-                            )
-                        }
-                    )
-                }
-
                 items(uiState.routes, key = { it.id }) { route ->
                     RouteCard(
                         route = route,

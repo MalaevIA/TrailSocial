@@ -1,5 +1,7 @@
 package com.trail2.data.remote.api
 
+import com.trail2.data.remote.dto.ChangeEmailRequest
+import com.trail2.data.remote.dto.DeleteAccountRequest
 import com.trail2.data.remote.dto.PaginatedResponseDto
 import com.trail2.data.remote.dto.RouteResponseDto
 import com.trail2.data.remote.dto.UpdateProfileRequest
@@ -9,6 +11,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -59,4 +62,10 @@ interface UserApi {
 
     @DELETE("users/{user_id}/follow")
     suspend fun unfollow(@Path("user_id") userId: String): Response<Unit>
+
+    @PUT("users/me/email")
+    suspend fun changeEmail(@Body request: ChangeEmailRequest): Response<Unit>
+
+    @HTTP(method = "DELETE", path = "users/me", hasBody = true)
+    suspend fun deleteAccount(@Body request: DeleteAccountRequest): Response<Unit>
 }
