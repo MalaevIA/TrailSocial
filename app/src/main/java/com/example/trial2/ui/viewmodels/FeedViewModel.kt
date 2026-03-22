@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.trail2.auth.TokenManager
 import com.trail2.data.TrailRoute
 import com.trail2.data.remote.ApiResult
+import com.trail2.data.repository.RouteCacheRepository
 import com.trail2.data.repository.RouteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,13 +30,15 @@ data class FeedUiState(
     val selectedTab: FeedTab = FeedTab.RECOMMENDED,
     val feedState: FeedTabState = FeedTabState(),
     val recommendedState: FeedTabState = FeedTabState(),
-    val isLoggedIn: Boolean = false
+    val isLoggedIn: Boolean = false,
+    val isOffline: Boolean = false
 )
 
 @HiltViewModel
 class FeedViewModel @Inject constructor(
     private val routeRepository: RouteRepository,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val cache: RouteCacheRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FeedUiState())
@@ -72,16 +75,34 @@ class FeedViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(feedState = it.feedState.copy(isLoading = true, error = null, currentPage = 1)) }
             when (val result = routeRepository.getFeed(page = 1)) {
-                is ApiResult.Success -> _uiState.update {
-                    it.copy(feedState = it.feedState.copy(
-                        routes = result.data.items,
-                        isLoading = false,
-                        currentPage = 1,
-                        hasMorePages = result.data.page < result.data.pages
-                    ))
+                is ApiResult.Success -> {
+                    viewModelScope.launch { cache.saveFeed(result.data.items) }
+                    _uiState.update {
+                        it.copy(
+                            isOffline = false,
+                            feedState = it.feedState.copy(
+                                routes = result.data.items,
+                                isLoading = false,
+                                currentPage = 1,
+                                hasMorePages = result.data.page < result.data.pages
+                            )
+                        )
+                    }
                 }
                 is ApiResult.Error -> _uiState.update { it.copy(feedState = it.feedState.copy(isLoading = false, error = result.message)) }
-                is ApiResult.NetworkError -> _uiState.update { it.copy(feedState = it.feedState.copy(isLoading = false, error = "Нет подключения к интернету")) }
+                is ApiResult.NetworkError -> {
+                    val cached = cache.loadFeed()
+                    _uiState.update {
+                        it.copy(
+                            isOffline = true,
+                            feedState = it.feedState.copy(
+                                isLoading = false,
+                                routes = cached.ifEmpty { it.feedState.routes },
+                                error = if (cached.isEmpty()) "Нет подключения к интернету" else null
+                            )
+                        )
+                    }
+                }
             }
         }
     }
@@ -110,16 +131,34 @@ class FeedViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(recommendedState = it.recommendedState.copy(isLoading = true, error = null, currentPage = 1)) }
             when (val result = routeRepository.getRecommended(page = 1)) {
-                is ApiResult.Success -> _uiState.update {
-                    it.copy(recommendedState = it.recommendedState.copy(
-                        routes = result.data.items,
-                        isLoading = false,
-                        currentPage = 1,
-                        hasMorePages = result.data.page < result.data.pages
-                    ))
+                is ApiResult.Success -> {
+                    viewModelScope.launch { cache.saveRecommended(result.data.items) }
+                    _uiState.update {
+                        it.copy(
+                            isOffline = false,
+                            recommendedState = it.recommendedState.copy(
+                                routes = result.data.items,
+                                isLoading = false,
+                                currentPage = 1,
+                                hasMorePages = result.data.page < result.data.pages
+                            )
+                        )
+                    }
                 }
                 is ApiResult.Error -> _uiState.update { it.copy(recommendedState = it.recommendedState.copy(isLoading = false, error = result.message)) }
-                is ApiResult.NetworkError -> _uiState.update { it.copy(recommendedState = it.recommendedState.copy(isLoading = false, error = "Нет подключения к интернету")) }
+                is ApiResult.NetworkError -> {
+                    val cached = cache.loadRecommended()
+                    _uiState.update {
+                        it.copy(
+                            isOffline = true,
+                            recommendedState = it.recommendedState.copy(
+                                isLoading = false,
+                                routes = cached.ifEmpty { it.recommendedState.routes },
+                                error = if (cached.isEmpty()) "Нет подключения к интернету" else null
+                            )
+                        )
+                    }
+                }
             }
         }
     }
@@ -172,6 +211,10 @@ class FeedViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun syncRoute(route: TrailRoute) {
+        updateRouteInBothTabs(route.id) { route }
     }
 
     private fun updateRouteInBothTabs(routeId: String, transform: (TrailRoute) -> TrailRoute) {

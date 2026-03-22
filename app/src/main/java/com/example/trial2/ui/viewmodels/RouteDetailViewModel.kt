@@ -25,6 +25,9 @@ import javax.inject.Inject
 data class RouteDetailUiState(
     val route: TrailRoute? = null,
     val comments: List<Comment> = emptyList(),
+    val commentsPage: Int = 1,
+    val hasMoreComments: Boolean = false,
+    val isLoadingMoreComments: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
     val commentText: String = "",
@@ -78,9 +81,35 @@ class RouteDetailViewModel @Inject constructor(
 
     private fun loadComments(routeId: String) {
         viewModelScope.launch {
-            when (val result = commentRepository.getComments(routeId)) {
-                is ApiResult.Success -> _uiState.update { it.copy(comments = result.data.items) }
+            when (val result = commentRepository.getComments(routeId, page = 1)) {
+                is ApiResult.Success -> _uiState.update {
+                    it.copy(
+                        comments = result.data.items,
+                        commentsPage = 1,
+                        hasMoreComments = result.data.page < result.data.pages
+                    )
+                }
                 else -> {}
+            }
+        }
+    }
+
+    fun loadMoreComments() {
+        val routeId = _uiState.value.route?.id ?: return
+        if (_uiState.value.isLoadingMoreComments || !_uiState.value.hasMoreComments) return
+        val nextPage = _uiState.value.commentsPage + 1
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMoreComments = true) }
+            when (val result = commentRepository.getComments(routeId, page = nextPage)) {
+                is ApiResult.Success -> _uiState.update {
+                    it.copy(
+                        comments = it.comments + result.data.items,
+                        commentsPage = nextPage,
+                        hasMoreComments = nextPage < result.data.pages,
+                        isLoadingMoreComments = false
+                    )
+                }
+                else -> _uiState.update { it.copy(isLoadingMoreComments = false) }
             }
         }
     }

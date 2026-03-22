@@ -72,61 +72,63 @@ fun RouteCard(
             // Photo banner
             Box(modifier = Modifier.fillMaxWidth().height(200.dp)) {
                 if (route.photos.isEmpty()) {
-                    // No photos — show real Yandex map
-                    val hasCoords = route.startLat != null && route.startLng != null &&
-                            route.endLat != null && route.endLng != null
-                    if (hasCoords) {
-                        RouteMapView(
-                            geometry = route.geometry?.coordinates ?: listOf(
-                                listOf(route.startLng!!, route.startLat!!),
-                                listOf(route.endLng!!, route.endLat!!)
-                            ),
-                            startLat = route.startLat!!,
-                            startLng = route.startLng!!,
-                            endLat = route.endLat!!,
-                            endLng = route.endLng!!,
-                            modifier = Modifier.fillMaxSize(),
-                            manageMapKitLifecycle = false
-                        )
-                    } else {
-                        RouteMapPreview(geometry = route.geometry, modifier = Modifier.fillMaxSize())
-                    }
+                    // No photos — lightweight Canvas preview (never use MapView inside LazyColumn)
+                    RouteMapPreview(geometry = route.geometry, modifier = Modifier.fillMaxSize())
                 } else if (route.photos.size == 1) {
-                    // Single photo
-                    RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current).data(routePhotoUrl(route.photos[0])).build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    // Multiple photos — swipeable carousel
-                    val pagerState = rememberPagerState { route.photos.size }
-                    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current).data(routePhotoUrl(route.photos[page])).build(),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
+                    // Single photo with map fallback on error
+                    val photoUrl = routePhotoUrl(route.photos[0])
+                    var failed by remember(route.id, photoUrl) { mutableStateOf(false) }
+                    if (failed) {
+                        RouteMapPreview(geometry = route.geometry, modifier = Modifier.fillMaxSize())
+                    } else {
+                        RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(photoUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                            onError = { failed = true }
+                        )
                     }
-                    // Dot indicators
-                    Row(
-                        modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        route.photos.indices.forEach { i ->
-                            val isSelected = pagerState.currentPage == i
-                            Box(
-                                modifier = Modifier
-                                    .size(if (isSelected) 8.dp else 6.dp)
-                                    .clip(CircleShape)
-                                    .background(if (isSelected) Color.White else Color.White.copy(0.5f))
-                            )
+                } else {
+                    // Multiple photos — swipeable carousel with map fallback on error
+                    var anyFailed by remember(route.id, route.photos) { mutableStateOf(false) }
+                    val pagerState = rememberPagerState { route.photos.size }
+                    if (anyFailed) {
+                        RouteMapPreview(geometry = route.geometry, modifier = Modifier.fillMaxSize())
+                    } else {
+                        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(routePhotoUrl(route.photos[page]))
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize(),
+                                    onError = { anyFailed = true }
+                                )
+                            }
+                        }
+                        // Dot indicators
+                        Row(
+                            modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            route.photos.indices.forEach { i ->
+                                val isSelected = pagerState.currentPage == i
+                                Box(
+                                    modifier = Modifier
+                                        .size(if (isSelected) 8.dp else 6.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isSelected) Color.White else Color.White.copy(0.5f))
+                                )
+                            }
                         }
                     }
                 }

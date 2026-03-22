@@ -117,9 +117,7 @@ fun RouteDetailScreen(
     val scrollState = rememberScrollState()
 
     if (uiState.isLoading && route == null) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        RouteDetailSkeleton()
         return
     }
 
@@ -519,6 +517,17 @@ fun RouteDetailScreen(
                             onAdminDelete = { adminDeletingCommentId = comment.id }
                         )
                         Spacer(Modifier.height(12.dp))
+                    }
+                    if (uiState.hasMoreComments) {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            if (uiState.isLoadingMoreComments) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            } else {
+                                TextButton(onClick = { vm.loadMoreComments() }) {
+                                    Text("Показать ещё комментарии")
+                                }
+                            }
+                        }
                     }
                 }
 

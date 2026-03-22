@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.ui.components.DifficultyBadge
+import com.trail2.ui.components.ExploreSkeleton
 import com.trail2.R
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -95,9 +96,7 @@ fun ExploreScreen(
         }
 
         if (uiState.isLoading && uiState.routes.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            ExploreSkeleton()
         } else {
             val isRefreshing = uiState.isLoading && uiState.routes.isNotEmpty()
             val pullState = rememberPullToRefreshState()

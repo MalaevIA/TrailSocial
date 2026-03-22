@@ -30,6 +30,8 @@ import com.trail2.ui.screens.*
 import com.trail2.ui.screens.auth.LoginScreen
 import com.trail2.ui.screens.onboarding.OnboardingNavGraph
 import com.trail2.ui.viewmodels.AuthViewModel
+import com.trail2.ui.viewmodels.FeedViewModel
+import com.trail2.ui.viewmodels.RouteDetailViewModel
 
 sealed class Screen {
     object Feed : Screen()
@@ -155,6 +157,8 @@ val bottomTabs = listOf(
 
 @Composable
 fun AppNavigation(
+    initialRouteId: String? = null,
+    onDeepLinkConsumed: () -> Unit = {},
     onboardingVm: OnboardingViewModel = hiltViewModel(),
     authVm: AuthViewModel = hiltViewModel()
 ) {
@@ -181,7 +185,7 @@ fun AppNavigation(
             )
         }
         else -> {
-            MainAppContent()
+            MainAppContent(initialRouteId = initialRouteId, onDeepLinkConsumed = onDeepLinkConsumed)
         }
     }
 }
@@ -198,12 +202,31 @@ private data class RouteMapData(
 )
 
 @Composable
-fun MainAppContent() {
+fun MainAppContent(
+    initialRouteId: String? = null,
+    onDeepLinkConsumed: () -> Unit = {}
+) {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.Feed) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var routeMapResult by remember { mutableStateOf<RouteMapData?>(null) }
     var editingRouteId by remember { mutableStateOf<String?>(null) }
     val builderVm: RouteBuilderViewModel = hiltViewModel()
+    val feedVm: FeedViewModel = hiltViewModel()
+
+    LaunchedEffect(initialRouteId) {
+        if (initialRouteId != null) {
+            currentScreen = Screen.RouteDetail(initialRouteId)
+            onDeepLinkConsumed()
+        }
+    }
+    val routeDetailVm: RouteDetailViewModel = hiltViewModel()
+
+    // Синхронизация лайков/сохранений при возврате с RouteDetail в ленту
+    LaunchedEffect(currentScreen) {
+        if (currentScreen !is Screen.RouteDetail) {
+            routeDetailVm.uiState.value.route?.let { feedVm.syncRoute(it) }
+        }
+    }
 
     val navigateBack: () -> Unit = { currentScreen = bottomTabs[selectedTabIndex].screen }
 

@@ -2,6 +2,7 @@ package com.trail2.ai_route
 
 import com.trail2.data.GeoJsonLineString
 import com.trail2.data.remote.dto.AiGenerateRequestDto
+import kotlinx.serialization.Serializable
 
 enum class TripPurpose(val label: String, val emoji: String) {
     WALK("Неспешная прогулка", "🚶"),
@@ -125,6 +126,7 @@ private fun RouteBuilderForm.buildDescription(): String {
     return parts.joinToString(". ")
 }
 
+@Serializable
 data class GeneratedRoute(
     val title: String,
     val description: String,
@@ -141,6 +143,7 @@ data class GeneratedRoute(
     val photos: List<String> = emptyList()
 )
 
+@Serializable
 data class RoutePoint(
     val lat: Double,
     val lon: Double,

@@ -36,10 +36,14 @@ data class RouteBuilderUiState(
 
 @HiltViewModel
 class RouteBuilderViewModel @Inject constructor(
-    private val repo: RouteBuilderRepository
+    private val repo: RouteBuilderRepository,
+    private val historyRepo: AiHistoryRepository
 ) : ViewModel() {
     private val _state = MutableStateFlow(RouteBuilderUiState())
     val state: StateFlow<RouteBuilderUiState> = _state.asStateFlow()
+
+    val history: StateFlow<List<GeneratedRoute>> = historyRepo.history
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val totalSteps = BuilderStep.entries.size
     val progress get() = (_state.value.currentStep.stepNum.toFloat()) / totalSteps
@@ -69,6 +73,10 @@ class RouteBuilderViewModel @Inject constructor(
 
     fun resetFully() {
         _state.value = RouteBuilderUiState()
+    }
+
+    fun replayFromHistory(route: GeneratedRoute) {
+        _state.update { it.copy(screenState = RouteBuilderScreenState.Result(route)) }
     }
 
     // ── Обновление формы ─────────────────────────────────────
@@ -108,15 +116,18 @@ class RouteBuilderViewModel @Inject constructor(
                 }
             )
 
-            _state.update {
-                it.copy(
-                    screenState = if (result.isSuccess)
-                        RouteBuilderScreenState.Result(result.getOrThrow())
-                    else
-                        RouteBuilderScreenState.Error(
+            if (result.isSuccess) {
+                val route = result.getOrThrow()
+                historyRepo.save(route)
+                _state.update { it.copy(screenState = RouteBuilderScreenState.Result(route)) }
+            } else {
+                _state.update {
+                    it.copy(
+                        screenState = RouteBuilderScreenState.Error(
                             result.exceptionOrNull()?.message ?: "Неизвестная ошибка"
                         )
-                )
+                    )
+                }
             }
         }
     }

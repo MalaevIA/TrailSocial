@@ -1,5 +1,8 @@
 package com.trail2.data
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class User(
     val id: String,
     val name: String,
@@ -15,10 +18,13 @@ data class User(
     val isActive: Boolean = true
 )
 
+@Serializable
 enum class Difficulty { EASY, MODERATE, HARD, EXPERT }
 
+@Serializable
 enum class RouteStatus { DRAFT, PRIVATE, PUBLISHED }
 
+@Serializable
 data class TrailRoute(
     val id: String,
     val author: User,
@@ -46,11 +52,13 @@ data class TrailRoute(
     val waypoints: List<Waypoint>? = null
 )
 
+@Serializable
 data class GeoJsonLineString(
     val type: String = "LineString",
     val coordinates: List<List<Double>> = emptyList()
 )
 
+@Serializable
 data class Waypoint(
     val lat: Double,
     val lng: Double,

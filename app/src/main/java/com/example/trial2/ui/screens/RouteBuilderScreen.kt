@@ -3,7 +3,10 @@ package com.trail2.ui.screens
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -17,6 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
@@ -24,6 +28,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.trail2.R
 import com.trail2.ai_route.*
+import com.trail2.ui.theme.ForestGreen
+import com.trail2.ui.theme.MossGreen
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -97,7 +103,29 @@ fun RouteBuilderScreen(
 
 @Composable
 private fun GoalStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
+    val history by vm.history.collectAsStateWithLifecycle()
     StepScroll {
+        if (history.isNotEmpty()) {
+            Text(
+                "История генераций",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(end = 4.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp)
+            ) {
+                items(history) { route ->
+                    HistoryRouteCard(route = route, onClick = { vm.replayFromHistory(route) })
+                }
+            }
+            HorizontalDivider(modifier = Modifier.padding(bottom = 20.dp))
+        }
         StepHeader("🎯", stringResource(R.string.builder_goal_title), stringResource(R.string.builder_goal_subtitle))
         EnumRadioGroup(
             items = TripPurpose.entries,
@@ -115,6 +143,40 @@ private fun GoalStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
             emoji = { it.emoji },
             onSelect = { vm.setGroupType(it) }
         )
+    }
+}
+
+@Composable
+private fun HistoryRouteCard(route: GeneratedRoute, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = ForestGreen.copy(alpha = 0.08f)),
+        border = BorderStroke(1.dp, ForestGreen.copy(alpha = 0.25f)),
+        modifier = Modifier.width(160.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                route.title,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 13.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 16.sp
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "%.1f км · %d мин".format(route.distanceKm, route.durationMin),
+                fontSize = 11.sp,
+                color = MossGreen
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                route.difficulty,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

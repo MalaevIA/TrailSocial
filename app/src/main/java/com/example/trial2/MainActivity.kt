@@ -1,11 +1,13 @@
 package com.trail2
 
 import android.Manifest
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -27,6 +29,8 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestMultiplePermissions()
     ) { /* результат не блокирует приложение — карта просто не покажет локацию */ }
 
+    private val deepLinkRouteId = mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -36,6 +40,7 @@ class MainActivity : ComponentActivity() {
                 Manifest.permission.ACCESS_FINE_LOCATION
             )
         )
+        handleDeepLinkIntent(intent)
         setContent {
             val settingsVm: SettingsViewModel = hiltViewModel()
             val isDarkTheme by settingsVm.isDarkTheme.collectAsStateWithLifecycle()
@@ -62,9 +67,26 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        AppNavigation()
+                        AppNavigation(
+                            initialRouteId = deepLinkRouteId.value,
+                            onDeepLinkConsumed = { deepLinkRouteId.value = null }
+                        )
                     }
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleDeepLinkIntent(intent)
+    }
+
+    private fun handleDeepLinkIntent(intent: Intent) {
+        if (intent.action == Intent.ACTION_VIEW) {
+            val uri = intent.data ?: return
+            if (uri.scheme == "trailsocial" && uri.host == "route") {
+                deepLinkRouteId.value = uri.lastPathSegment
             }
         }
     }

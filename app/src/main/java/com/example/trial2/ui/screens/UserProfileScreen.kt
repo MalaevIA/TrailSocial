@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.FollowListType
 import com.trail2.ui.components.ReportDialog
 import com.trail2.ui.components.UserAvatar
+import com.trail2.ui.components.UserProfileSkeleton
 import com.trail2.ui.viewmodels.UserProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -76,9 +77,7 @@ fun UserProfileScreen(
         }
     ) { padding ->
         if (uiState.isLoading) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            UserProfileSkeleton()
             return@Scaffold
         }
 
