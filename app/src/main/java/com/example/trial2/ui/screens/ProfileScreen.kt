@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -90,7 +92,15 @@ fun ProfileScreen(
     val savedRoutes = profileState.savedRoutes
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
-    LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = innerPadding.calculateBottomPadding())) {
+    val isRefreshing = profileState.isLoading && profileState.user != null
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        state = pullState,
+        isRefreshing = isRefreshing,
+        onRefresh = { profileVm.loadProfile() },
+        modifier = Modifier.fillMaxSize().padding(bottom = innerPadding.calculateBottomPadding())
+    ) {
+    LazyColumn(modifier = Modifier.fillMaxWidth()) {
         // Header gradient
         item {
             Box(
@@ -321,6 +331,7 @@ fun ProfileScreen(
             }
         }
     }
+    } // end PullToRefreshBox
     } // end Scaffold
 
     if (showLogoutDialog) {

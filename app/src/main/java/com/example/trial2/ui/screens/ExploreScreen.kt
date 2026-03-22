@@ -10,6 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,7 +37,7 @@ import com.trail2.ui.theme.ForestGreen
 import com.trail2.ui.util.routePhotoUrl
 import com.trail2.ui.viewmodels.ExploreViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ExploreScreen(
     onRouteClick: (String) -> Unit,
@@ -92,11 +94,13 @@ fun ExploreScreen(
             }
         }
 
-        if (uiState.isLoading) {
+        if (uiState.isLoading && uiState.routes.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
+            val isRefreshing = uiState.isLoading && uiState.routes.isNotEmpty()
+            val pullState = rememberPullToRefreshState()
             val defaultRegionColors = listOf("2D6A4F", "E76F51", "457B9D", "E63946", "264653", "6D6875")
             val defaultRegions = listOf(
                 stringResource(R.string.region_ural),
@@ -108,6 +112,12 @@ fun ExploreScreen(
             ).mapIndexed { i, name -> RegionInfo(name = name) }
             val regions = if (uiState.regions.isNotEmpty()) uiState.regions else defaultRegions
 
+            PullToRefreshBox(
+                state = pullState,
+                isRefreshing = isRefreshing,
+                onRefresh = vm::refresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -194,6 +204,7 @@ fun ExploreScreen(
 
                 item { Spacer(Modifier.height(80.dp)) }
             }
+            } // end PullToRefreshBox
         }
     }
 }

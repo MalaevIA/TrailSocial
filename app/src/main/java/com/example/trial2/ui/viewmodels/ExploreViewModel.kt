@@ -59,6 +59,11 @@ class ExploreViewModel @Inject constructor(
         }
     }
 
+    fun refresh() {
+        loadRegions()
+        loadAllRoutes()
+    }
+
     private fun loadRegions() {
         viewModelScope.launch {
             when (val result = routeRepository.getRegions()) {
