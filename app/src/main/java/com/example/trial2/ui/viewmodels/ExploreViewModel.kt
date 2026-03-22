@@ -24,7 +24,8 @@ data class ExploreUiState(
     val regions: List<RegionInfo> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isSearching: Boolean = false
+    val isSearching: Boolean = false,
+    val selectedRegion: String? = null
 )
 
 @HiltViewModel
@@ -90,7 +91,7 @@ class ExploreViewModel @Inject constructor(
 
     fun searchByRegion(region: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, query = region) }
+            _uiState.update { it.copy(isLoading = true, selectedRegion = region) }
             when (val result = routeRepository.getRoutes(region = region)) {
                 is ApiResult.Success -> _uiState.update {
                     it.copy(routes = result.data.items, isLoading = false)
@@ -98,5 +99,10 @@ class ExploreViewModel @Inject constructor(
                 else -> _uiState.update { it.copy(isLoading = false) }
             }
         }
+    }
+
+    fun clearRegion() {
+        _uiState.update { it.copy(selectedRegion = null) }
+        loadAllRoutes()
     }
 }

@@ -59,6 +59,7 @@ JWT-based auth with encrypted token storage:
 - `AuthInterceptor` — adds `Authorization: Bearer` header (skips `/auth/*` endpoints)
 - `TokenAuthenticator` — on 401, refreshes token via `POST auth/refresh` (up to 2 retries), clears tokens on failure
 - `AuthRepository` — `signup()`, `login()`, `logout()` — saves tokens via `TokenManager`
+- `AuthViewModel` — drives `LoginScreen` (login/signup tab switcher, delegates to `AuthRepository`)
 
 ### Data Layer (API-only, no local DB)
 All data flows through Retrofit. Room was removed — there is no local database.
@@ -84,8 +85,14 @@ All data flows through Retrofit. Room was removed — there is no local database
 - `AdminViewModel` — drives `AdminPanelScreen`
 - `UserProfileViewModel` — drives `UserProfileScreen`, combines `UserRepository`, `RouteRepository`, `ReportRepository`, `AdminRepository`
 - `ReportDialog` composable (`ui/components/ReportDialog.kt`) — reusable modal for filing reports
+- `RouteMapView` composable (`ui/components/RouteMapView.kt`) — reusable Yandex MapView with route polyline, start/end markers, and intermediate dot markers; takes GeoJSON `[lng, lat]` pairs; used in `RouteDetailScreen` and `RouteResultScreen`
 
 ### AI Route Builder
+All AI-route classes live in the `ai_route/` package (not `ui/viewmodels/`):
+- `RouteBuilderModels.kt` — form enums (`TripPurpose`, `TripDuration`, `TripDistance`, `Terrain`, `GroupType`, `Pace`), `RouteBuilderForm`, `GeneratedRoute`, `RoutePoint`, and `DEMO_ROUTE` (offline fallback constant)
+- `RouteBuilderViewModel` — hoisted to `MainAppContent` level (see Navigation section)
+- `RouteBuilderRepository` — async polling logic
+
 Async generation with polling:
 1. `RouteBuilderScreen` — 5-step form (`BuilderStep` enum: GOAL → PARAMS → TERRAIN → DETAILS → EXTRAS)
 2. `RouteBuilderViewModel` — step navigation, validation, generation trigger, poll-count progress tracking
@@ -125,6 +132,9 @@ Data flow: `RouteMapPickerScreen` → `onRouteSelected` callback → `Navigation
 Full ru/en support. Default locale is Russian (`values/strings.xml`), English in `values-en/strings.xml`. All screens use `stringResource()`. Locale switching in `MainActivity` via `ContextWrapper` pattern that preserves the Activity context chain for Hilt compatibility.
 
 Date formatting: `formatDate(isoString)` in `ui/util/DateUtils.kt` — returns relative text ("сегодня"/"yesterday"/etc.) or locale-formatted date.
+
+### Settings
+`SettingsScreen` + `SettingsViewModel` — handle locale switching (ru/en via `MainActivity` restart with `ContextWrapper`), account info display, and logout. Locale preference is persisted in `DataStore<Preferences>`.
 
 ### Onboarding
 5-step flow (Welcome → City → Fitness → Interests → Profile) managed by `OnboardingViewModel` + `OnboardingRepository`. Persisted to `DataStore<Preferences>` with `SharingStarted.Eagerly` (not `WhileSubscribed` — that caused data loss).

@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -79,7 +80,7 @@ fun ExploreScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                if (uiState.query.isBlank()) {
+                if (uiState.query.isBlank() && uiState.selectedRegion == null) {
                     item {
                         Text(stringResource(R.string.explore_popular_regions), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                         Spacer(Modifier.height(8.dp))
@@ -103,6 +104,26 @@ fun ExploreScreen(
                     }
                 }
 
+                if (uiState.selectedRegion != null) {
+                    item {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { vm.clearRegion() }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                                    contentDescription = stringResource(R.string.back),
+                                    tint = ForestGreen
+                                )
+                            }
+                            Text(
+                                uiState.selectedRegion,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 15.sp
+                            )
+                        }
+                        Spacer(Modifier.height(4.dp))
+                    }
+                }
+
                 if (uiState.users.isNotEmpty()) {
                     item {
                         Text(stringResource(R.string.explore_users), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
@@ -121,14 +142,16 @@ fun ExploreScreen(
                     }
                 }
 
-                item {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        if (uiState.query.isBlank()) stringResource(R.string.explore_all_routes) else stringResource(R.string.explore_results),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp
-                    )
-                    Spacer(Modifier.height(8.dp))
+                if (uiState.selectedRegion == null) {
+                    item {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            if (uiState.query.isBlank()) stringResource(R.string.explore_all_routes) else stringResource(R.string.explore_results),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
                 }
 
                 items(uiState.routes.size) { i ->
