@@ -1,5 +1,8 @@
 package com.trail2.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,12 +18,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.compose.AsyncImage
+import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.trail2.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.trail2.FollowListType
@@ -30,7 +38,9 @@ import com.trail2.onboarding.FitnessLevel
 import com.trail2.onboarding.OnboardingData
 import com.trail2.onboarding.OnboardingViewModel
 import com.trail2.ui.components.RouteCard
+import com.trail2.ui.util.routePhotoUrl
 import com.trail2.ui.viewmodels.ProfileViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -41,14 +51,25 @@ fun ProfileScreen(
     profileVm: ProfileViewModel = hiltViewModel(),
     onboardingVm: OnboardingViewModel = hiltViewModel()
 ) {
-    // Перезагружаем данные при каждом заходе на экран
-    LaunchedEffect(Unit) {
-        profileVm.loadProfile()
-    }
+    LaunchedEffect(Unit) { profileVm.loadProfile() }
+
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var showLogoutDialog by remember { mutableStateOf(false) }
     val profileState by profileVm.uiState.collectAsStateWithLifecycle()
     val onboardingAnswers by onboardingVm.savedAnswers.collectAsStateWithLifecycle()
+
+    val avatarPickerLauncher = rememberLauncherForActivityResult(PickVisualMedia()) { uri ->
+        uri?.let { profileVm.uploadAvatar(it, context) }
+    }
+
+    LaunchedEffect(profileState.avatarError) {
+        val error = profileState.avatarError ?: return@LaunchedEffect
+        scope.launch { snackbarHostState.showSnackbar(error) }
+        profileVm.clearAvatarError()
+    }
 
     val user = profileState.user
     val fallbackName = stringResource(R.string.profile_default_title)
@@ -68,7 +89,8 @@ fun ProfileScreen(
     val draftRoutes = profileState.myRoutes.filter { it.status == RouteStatus.DRAFT }
     val savedRoutes = profileState.savedRoutes
 
-    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { innerPadding ->
+    LazyColumn(modifier = Modifier.fillMaxWidth().padding(bottom = innerPadding.calculateBottomPadding())) {
         // Header gradient
         item {
             Box(
@@ -95,10 +117,34 @@ fun ProfileScreen(
                             .size(88.dp)
                             .clip(CircleShape)
                             .background(Color(0xFF2D6A4F))
-                            .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                            .border(4.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                            .clickable(enabled = !profileState.isUploadingAvatar) {
+                                avatarPickerLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageOnly))
+                            },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(displayName.take(1).uppercase(), fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        val avatarUrl = user?.avatarUrl?.takeIf { it.isNotBlank() }
+                        if (avatarUrl != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(routePhotoUrl(avatarUrl))
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Text(displayName.take(1).uppercase(), fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                        if (profileState.isUploadingAvatar) {
+                            Box(
+                                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.45f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White, strokeWidth = 2.5.dp)
+                            }
+                        }
                     }
                 }
 
@@ -273,6 +319,7 @@ fun ProfileScreen(
             }
         }
     }
+    } // end Scaffold
 
     if (showLogoutDialog) {
         AlertDialog(
