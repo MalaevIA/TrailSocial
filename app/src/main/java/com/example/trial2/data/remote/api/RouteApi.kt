@@ -62,6 +62,12 @@ interface RouteApi {
         @Query("page_size") pageSize: Int = 20
     ): PaginatedResponseDto<RouteResponseDto>
 
+    @GET("recommended")
+    suspend fun getRecommended(
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 20
+    ): PaginatedResponseDto<RouteResponseDto>
+
     @GET("search")
     suspend fun searchRoutes(
         @Query("q") query: String,

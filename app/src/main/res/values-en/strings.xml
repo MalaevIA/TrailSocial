@@ -47,6 +47,13 @@
     <string name="filter_hard">Hard</string>
     <string name="filter_expert">Expert</string>
 
+    <!-- Feed tabs -->
+    <string name="feed_tab_subscriptions">Following</string>
+    <string name="feed_tab_recommended">Recommended</string>
+    <string name="feed_empty_subscriptions">Follow other users to see their routes here</string>
+    <string name="feed_empty_recommended">No routes yet</string>
+    <string name="feed_login_prompt">Sign in to see routes from users you follow</string>
+
     <!-- Explore screen -->
     <string name="explore_search">Search routes</string>
     <string name="explore_search_placeholder">Ural, Caucasus, Altai…</string>

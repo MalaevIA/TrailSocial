@@ -237,7 +237,8 @@ fun MainAppContent() {
                         onRouteClick = { id -> currentScreen = Screen.RouteDetail(id) },
                         onNotificationsClick = { currentScreen = Screen.Notifications },
                         onCreateRouteClick = { currentScreen = Screen.RouteCreate },
-                        onAuthorClick = { userId -> currentScreen = Screen.UserProfile(userId) }
+                        onAuthorClick = { userId -> currentScreen = Screen.UserProfile(userId) },
+                        onLoginClick = { currentScreen = Screen.Login }
                     )
                     1 -> ExploreScreen(
                         onRouteClick = { id -> currentScreen = Screen.RouteDetail(id) },

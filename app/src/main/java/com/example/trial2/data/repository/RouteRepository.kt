@@ -39,6 +39,10 @@ class RouteRepository @Inject constructor(
         routeApi.getFeed(page).toDomain { it.toDomain() }
     }
 
+    suspend fun getRecommended(page: Int = 1): ApiResult<PaginatedResponse<TrailRoute>> = safeApiCall {
+        routeApi.getRecommended(page).toDomain { it.toDomain() }
+    }
+
     suspend fun getRouteById(routeId: String): ApiResult<TrailRoute> = safeApiCall {
         routeApi.getRoute(routeId).toDomain()
     }

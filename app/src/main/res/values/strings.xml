@@ -47,6 +47,13 @@
     <string name="filter_hard">Сложные</string>
     <string name="filter_expert">Экспертные</string>
 
+    <!-- Feed tabs -->
+    <string name="feed_tab_subscriptions">Подписки</string>
+    <string name="feed_tab_recommended">Рекомендации</string>
+    <string name="feed_empty_subscriptions">Подпишитесь на других пользователей, чтобы видеть их маршруты</string>
+    <string name="feed_empty_recommended">Маршрутов пока нет</string>
+    <string name="feed_login_prompt">Войдите, чтобы видеть маршруты от пользователей, на которых вы подписаны</string>
+
     <!-- Explore screen -->
     <string name="explore_search">Поиск маршрутов</string>
     <string name="explore_search_placeholder">Урал, Кавказ, Алтай…</string>
