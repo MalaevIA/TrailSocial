@@ -13,9 +13,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
@@ -44,8 +46,17 @@ import coil3.request.ImageRequest
 import com.trail2.ui.util.RoutePhotoPlaceholder
 import com.trail2.ui.util.formatDate
 import com.trail2.ui.util.routePhotoUrl
+import com.trail2.BuildConfig
+import com.trail2.ui.util.YooKassaContract
 import com.trail2.ui.viewmodels.RouteDetailViewModel
+import ru.yoomoney.sdk.kassa.payments.Checkout
+import ru.yoomoney.sdk.kassa.payments.TokenizationResult
+import ru.yoomoney.sdk.kassa.payments.checkoutParameters.Amount
+import ru.yoomoney.sdk.kassa.payments.checkoutParameters.PaymentParameters
+import ru.yoomoney.sdk.kassa.payments.checkoutParameters.PaymentMethodType
+import ru.yoomoney.sdk.kassa.payments.checkoutParameters.SavePaymentMethod
 import com.yandex.mapkit.MapKitFactory
+import java.util.Currency
 import com.yandex.mapkit.geometry.Point
 import com.yandex.mapkit.geometry.Polyline
 import com.yandex.mapkit.geometry.BoundingBox
@@ -75,6 +86,18 @@ fun RouteDetailScreen(
     val reportSentText = stringResource(R.string.report_sent)
     val reportAlreadySentText = stringResource(R.string.report_already_sent)
 
+    val context = LocalContext.current
+
+    val yooKassaLauncher = rememberLauncherForActivityResult(YooKassaContract()) { result: TokenizationResult? ->
+        result?.paymentToken?.let { vm.confirmPayment(it) }
+    }
+
+    val threeDsLauncher = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) {
+        vm.verifyPayment()
+    }
+
     LaunchedEffect(uiState.reportSent) {
         if (uiState.reportSent) {
             snackbarHostState.showSnackbar(reportSentText)
@@ -95,9 +118,86 @@ fun RouteDetailScreen(
         uiState.clonedRouteId?.let { onClonedRoute(it) }
     }
 
+    LaunchedEffect(uiState.paymentConfirmationUrl) {
+        val url = uiState.paymentConfirmationUrl ?: return@LaunchedEffect
+        threeDsLauncher.launch(ru.yoomoney.sdk.kassa.payments.Checkout.create3dsIntent(context, url))
+        vm.clearConfirmationUrl()
+    }
+
+    // Payment bottom sheet
+    if (uiState.showPaymentSheet) {
+        val plan = uiState.subscriptionPlan
+        ModalBottomSheet(onDismissRequest = vm::hidePaymentSheet) {
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(stringResource(R.string.subscription_title), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                if (plan != null) {
+                    val descriptionDefault = stringResource(R.string.subscription_description_default)
+                    Text(plan.description.ifBlank { descriptionDefault },
+                        fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val perMonth = stringResource(R.string.subscription_per_month)
+                    Surface(shape = RoundedCornerShape(12.dp), color = ForestGreen.copy(alpha = 0.1f)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(stringResource(R.string.subscription_price_label), fontWeight = FontWeight.Medium)
+                            Text("${plan.price} ${plan.currency}$perMonth",
+                                fontWeight = FontWeight.Bold, fontSize = 18.sp, color = ForestGreen)
+                        }
+                    }
+                }
+                if (uiState.paymentConfirmError != null) {
+                    Text(uiState.paymentConfirmError!!, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                }
+                Spacer(Modifier.height(4.dp))
+                val subscriptionTitleStr = stringResource(R.string.subscription_title)
+                val subscriptionSubtitleStr = stringResource(R.string.subscription_payment_subtitle)
+                Button(
+                    onClick = {
+                        val p = plan ?: return@Button
+                        val price = p.price.toBigDecimalOrNull() ?: return@Button
+                        val paymentIntent = Checkout.createTokenizeIntent(
+                            context,
+                            PaymentParameters(
+                                amount = Amount(price, Currency.getInstance("RUB")),
+                                title = subscriptionTitleStr,
+                                subtitle = p.description.ifBlank { subscriptionSubtitleStr },
+                                clientApplicationKey = BuildConfig.YOOKASSA_CLIENT_KEY,
+                                shopId = BuildConfig.YOOKASSA_SHOP_ID,
+                                savePaymentMethod = SavePaymentMethod.OFF,
+                                paymentMethodTypes = setOf(PaymentMethodType.BANK_CARD)
+                            )
+                        )
+                        vm.hidePaymentSheet()
+                        yooKassaLauncher.launch(paymentIntent)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !uiState.isConfirmingPayment,
+                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (uiState.isConfirmingPayment) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.subscription_purchase), fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                OutlinedButton(
+                    onClick = vm::hidePaymentSheet,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) { Text(stringResource(R.string.cancel)) }
+            }
+        }
+    }
+
     val route = uiState.route
 
-    // Full-screen walking/navigation mode
+    // Full-screen walking / navigation mode
     if (uiState.isNavigating && route != null && route.geometry != null &&
         route.startLat != null && route.startLng != null && route.endLat != null && route.endLng != null
     ) {
@@ -115,6 +215,7 @@ fun RouteDetailScreen(
     }
 
     val scrollState = rememberScrollState()
+    val isRefreshing = uiState.isLoading && route != null
 
     if (uiState.isLoading && route == null) {
         RouteDetailSkeleton()
@@ -131,8 +232,6 @@ fun RouteDetailScreen(
         }
         return
     }
-
-    val context = LocalContext.current
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -201,10 +300,14 @@ fun RouteDetailScreen(
             }
         }
     ) { padding ->
+        PullToRefreshBox(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            isRefreshing = isRefreshing,
+            onRefresh = { vm.loadRoute(route.id) }
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(scrollState)
         ) {
             if (route.photos.isNotEmpty()) {
@@ -218,11 +321,20 @@ fun RouteDetailScreen(
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier.fillMaxSize()
+                                    .then(if (route.isLocked) Modifier.blur(20.dp) else Modifier)
                             )
                         }
                     }
                     Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(0.4f to Color.Transparent, 1f to Color.Black.copy(0.5f))))
                     DifficultyBadge(route.difficulty, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp))
+                    if (route.isLocked) {
+                        Icon(
+                            Icons.Outlined.Lock,
+                            contentDescription = null,
+                            modifier = Modifier.align(Alignment.Center).size(48.dp),
+                            tint = Color.White
+                        )
+                    }
                     if (route.photos.size > 1) {
                         Row(
                             modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp),
@@ -246,7 +358,41 @@ fun RouteDetailScreen(
             val hasGeometry = route.geometry != null && route.startLat != null &&
                     route.startLng != null && route.endLat != null && route.endLng != null
 
-            if (hasGeometry) {
+            if (route.isPaid && route.isLocked) {
+                // Заглушка с замком для платного заблокированного маршрута
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(220.dp)
+                        .background(Color(0xFFE8F5E9)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Icon(Icons.Outlined.Lock, null, modifier = Modifier.size(48.dp), tint = ForestGreen)
+                        Text(stringResource(R.string.route_locked_title), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        Text(stringResource(R.string.route_locked_subtitle),
+                            fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 32.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                Button(
+                    onClick = vm::showPaymentSheet,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+                ) {
+                    Icon(Icons.Outlined.Lock, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    val p = uiState.subscriptionPlan
+                    val purchaseText = if (p != null)
+                        stringResource(R.string.subscription_purchase_for_price, p.price, p.currency)
+                    else
+                        stringResource(R.string.subscription_purchase)
+                    Text(purchaseText, fontWeight = FontWeight.SemiBold)
+                }
+            } else if (hasGeometry) {
                 Spacer(Modifier.height(8.dp))
                 RouteMapView(
                     geometry = route.geometry!!.coordinates,
@@ -254,46 +400,31 @@ fun RouteDetailScreen(
                     startLng = route.startLng!!,
                     endLat = route.endLat!!,
                     endLng = route.endLng!!,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(360.dp)
+                    modifier = Modifier.fillMaxWidth().height(360.dp)
                 )
+                Spacer(Modifier.height(4.dp))
+                Button(
+                    onClick = vm::startNavigation,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+                ) {
+                    Icon(Icons.Filled.Navigation, null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.route_start_walking), fontWeight = FontWeight.SemiBold)
+                }
             } else {
-                // Заглушка карты — без геометрии
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(Color(0xFFE8F5E9)),
+                    modifier = Modifier.fillMaxWidth().height(200.dp).background(Color(0xFFE8F5E9)),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Outlined.Map, null, modifier = Modifier.size(48.dp), tint = ForestGreen)
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            stringResource(R.string.route_no_map),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 14.sp
-                        )
+                        Text(stringResource(R.string.route_no_map),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     }
                 }
-            }
-
-            Spacer(Modifier.height(4.dp))
-            Button(
-                onClick = {
-                    if (hasGeometry) vm.startNavigation()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                enabled = hasGeometry,
-                colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
-            ) {
-                Icon(Icons.Filled.Navigation, null, modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.route_start_walking), fontWeight = FontWeight.SemiBold)
             }
             Spacer(Modifier.height(8.dp))
 
@@ -323,7 +454,7 @@ fun RouteDetailScreen(
                 Text(route.title, fontWeight = FontWeight.Bold, fontSize = 22.sp)
 
                 Spacer(Modifier.height(4.dp))
-                Text("${route.commentsCount} комментариев · ${route.likesCount} лайков", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.route_comments_likes, route.commentsCount, route.likesCount), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                 Spacer(Modifier.height(16.dp))
 
@@ -337,23 +468,38 @@ fun RouteDetailScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                Text("Характеристики маршрута", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                Text(stringResource(R.string.route_characteristics), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                 Spacer(Modifier.height(10.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    DetailStatCard("📏", "Дистанция", "${route.distanceKm} км", modifier = Modifier.weight(1f))
-                    DetailStatCard("⛰️", "Набор высоты", "+${route.elevationGainM} м", modifier = Modifier.weight(1f))
+                    DetailStatCard("📏", stringResource(R.string.route_stat_distance), "${route.distanceKm} км", modifier = Modifier.weight(1f))
+                    DetailStatCard("⛰️", stringResource(R.string.route_stat_elevation), "+${route.elevationGainM} м", modifier = Modifier.weight(1f))
                 }
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    DetailStatCard("⏱️", "Время", formatDurationMinutes(route.durationMinutes), modifier = Modifier.weight(1f))
-                    DetailStatCard("💪", "Сложность", difficultyLabel(route.difficulty), modifier = Modifier.weight(1f))
+                    DetailStatCard("⏱️", stringResource(R.string.route_stat_time), formatDurationMinutes(route.durationMinutes), modifier = Modifier.weight(1f))
+                    DetailStatCard("💪", stringResource(R.string.route_stat_difficulty), difficultyLabel(route.difficulty), modifier = Modifier.weight(1f))
                 }
 
                 Spacer(Modifier.height(20.dp))
 
-                Text("Описание", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                Text(stringResource(R.string.route_description), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                 Spacer(Modifier.height(8.dp))
-                Text(route.description, fontSize = 14.sp, lineHeight = 22.sp, color = MaterialTheme.colorScheme.onSurface.copy(0.85f))
+                val displayDescription = if (route.isLocked && route.previewDescription != null)
+                    route.previewDescription else route.description
+                Text(displayDescription, fontSize = 14.sp, lineHeight = 22.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(0.85f))
+                if (route.isLocked) {
+                    Spacer(Modifier.height(8.dp))
+                    Surface(shape = RoundedCornerShape(8.dp), color = ForestGreen.copy(alpha = 0.08f)) {
+                        Row(modifier = Modifier.fillMaxWidth().padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Outlined.Lock, null, modifier = Modifier.size(16.dp), tint = ForestGreen)
+                            Text(stringResource(R.string.subscription_locked_description),
+                                fontSize = 13.sp, color = ForestGreen)
+                        }
+                    }
+                }
 
                 // ── Точки маршрута ──────────────────────────────────
                 val waypoints = route.waypoints
@@ -361,7 +507,7 @@ fun RouteDetailScreen(
                     Spacer(Modifier.height(20.dp))
                     HorizontalDivider()
                     Spacer(Modifier.height(16.dp))
-                    Text("Точки маршрута", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                    Text(stringResource(R.string.result_waypoints), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                     Spacer(Modifier.height(10.dp))
                     waypoints.forEachIndexed { idx, wp ->
                         WaypointCard(wp = wp, number = idx + 1)
@@ -372,7 +518,7 @@ fun RouteDetailScreen(
                 Spacer(Modifier.height(16.dp))
 
                 if (route.tags.isNotEmpty()) {
-                    Text("Теги", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                    Text(stringResource(R.string.route_tags), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                     Spacer(Modifier.height(8.dp))
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -408,7 +554,7 @@ fun RouteDetailScreen(
                     ) {
                         Icon(if (route.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder, null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Сохранить")
+                        Text(stringResource(R.string.save))
                     }
                 }
 
@@ -465,8 +611,8 @@ fun RouteDetailScreen(
                         Spacer(Modifier.width(6.dp))
                         Text(stringResource(R.string.route_delete))
                     }
-                } else {
-                    // Other's route: Clone to draft
+                } else if (uiState.currentUserId != null && !route.isLocked) {
+                    // Other's route: Clone to draft — only when identity confirmed and route not locked
                     OutlinedButton(
                         onClick = vm::cloneToDraft,
                         modifier = Modifier.fillMaxWidth(),
@@ -502,11 +648,11 @@ fun RouteDetailScreen(
                 HorizontalDivider()
                 Spacer(Modifier.height(16.dp))
 
-                Text("Комментарии (${uiState.comments.size})", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                Text(stringResource(R.string.route_comments, uiState.comments.size), fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
                 Spacer(Modifier.height(12.dp))
 
                 if (uiState.comments.isEmpty()) {
-                    Text("Пока нет комментариев", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                    Text(stringResource(R.string.route_no_comments), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 } else {
                     uiState.comments.forEach { comment ->
                         CommentItem(
@@ -524,7 +670,7 @@ fun RouteDetailScreen(
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
                             } else {
                                 TextButton(onClick = { vm.loadMoreComments() }) {
-                                    Text("Показать ещё комментарии")
+                                    Text(stringResource(R.string.route_show_more_comments))
                                 }
                             }
                         }
@@ -534,6 +680,7 @@ fun RouteDetailScreen(
                 Spacer(Modifier.height(80.dp))
             }
         }
+        } // end PullToRefreshBox
     }
 
     if (showDeleteDialog) {
@@ -725,20 +872,22 @@ fun CommentItem(
     }
 }
 
+@Composable
 fun difficultyLabel(d: Difficulty) = when (d) {
-    Difficulty.EASY -> "Лёгкий"
-    Difficulty.MODERATE -> "Средний"
-    Difficulty.HARD -> "Сложный"
-    Difficulty.EXPERT -> "Экспертный"
+    Difficulty.EASY -> stringResource(R.string.difficulty_easy)
+    Difficulty.MODERATE -> stringResource(R.string.difficulty_medium)
+    Difficulty.HARD -> stringResource(R.string.difficulty_hard)
+    Difficulty.EXPERT -> stringResource(R.string.difficulty_expert)
 }
 
+@Composable
 fun formatDurationMinutes(minutes: Int): String {
     val h = minutes / 60
     val m = minutes % 60
     return when {
-        h == 0 -> "${m} мин"
-        m == 0 -> "${h} ч"
-        else -> "${h} ч ${m} мин"
+        h == 0 -> stringResource(R.string.time_minutes, m)
+        m == 0 -> stringResource(R.string.time_hours, h)
+        else -> stringResource(R.string.time_hours_minutes, h, m)
     }
 }
 

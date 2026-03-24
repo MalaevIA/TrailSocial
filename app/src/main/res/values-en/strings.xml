@@ -34,6 +34,7 @@
     <string name="time_minutes">%d min</string>
     <string name="time_hours">%d h</string>
     <string name="time_hours_minutes">%d h %d min</string>
+    <string name="time_days">%d d</string>
 
     <!-- Feed screen -->
     <string name="feed_title">Верста</string>
@@ -190,6 +191,7 @@
     <string name="notification_route_like">%1$s liked route \"%2$s\"</string>
     <string name="notification_new_comment">%1$s: %2$s</string>
     <string name="notification_new_route">%1$s published route \"%2$s\"</string>
+    <string name="notification_new_paid_subscriber">%s subscribed with a paid plan</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Settings</string>
@@ -221,6 +223,7 @@
     <string name="map_picker_point_desc_hint">What\'s interesting at this point</string>
     <string name="map_picker_no_results">No results found</string>
     <string name="map_picker_waypoints">Route waypoints</string>
+    <string name="map_picker_default_point_name">Point %d</string>
 
     <!-- Login screen -->
     <string name="login_title">Верста</string>
@@ -242,6 +245,10 @@
     <string name="welcome_terms">By pressing \"Get started\", you agree to the Terms of Service and Privacy Policy</string>
 
     <!-- Onboarding: City -->
+    <plurals name="city_plural">
+        <item quantity="one">city</item>
+        <item quantity="other">cities</item>
+    </plurals>
     <string name="city_title">Where do you want to walk?</string>
     <string name="city_subtitle">Choose one or more cities — we\'ll find routes nearby</string>
     <string name="city_selected">Selected: %1$d %2$s</string>
@@ -325,6 +332,76 @@
     <string name="admin_delete_admin">Delete (admin)</string>
     <string name="admin_delete_comment_admin">Delete comment (admin)</string>
     <string name="settings_admin">Admin Panel</string>
+
+    <!-- Feed screen extras -->
+    <string name="feed_offline">Offline — showing cached routes</string>
+
+    <!-- Explore screen extras -->
+    <string name="explore_all_regions">All regions</string>
+    <string name="explore_easy_routes">Easy routes</string>
+    <string name="explore_moderate_routes">Moderate routes</string>
+    <string name="explore_hard_routes">Hard routes</string>
+    <string name="explore_expert_routes">Expert routes</string>
+
+    <!-- Route Builder extras -->
+    <string name="builder_history">Generation history</string>
+    <string name="builder_stage_analysis">Analysis</string>
+    <string name="builder_stage_generation">Generation</string>
+    <string name="builder_stage_points">Points</string>
+    <string name="builder_stage_assembly">Assembly</string>
+
+    <!-- Route Card extras -->
+    <string name="route_locked_access_hint">Subscribe to the author to get access to the full route.</string>
+    <string name="subscription_subscribe_to_author">Subscribe to author</string>
+    <string name="saved">Saved</string>
+
+    <!-- Subscription / Payment -->
+    <string name="subscription_title">Author subscription</string>
+    <string name="subscription_description_default">Access to all paid author routes</string>
+    <string name="subscription_price_label">Price</string>
+    <string name="subscription_per_month">/mo</string>
+    <string name="subscription_purchase">Subscribe</string>
+    <string name="subscription_purchase_for_price">Subscribe for %1$s %2$s/mo</string>
+    <string name="subscription_subscribe_for">Subscribe for %s ₽/mo</string>
+    <string name="subscription_price_month">%s ₽ / month</string>
+    <string name="subscription_payment_subtitle">Access to paid routes</string>
+    <string name="subscription_locked_description">Full description available with subscription</string>
+
+    <!-- Route locked by subscription -->
+    <string name="route_locked_title">Route available by subscription</string>
+    <string name="route_locked_subtitle">Subscribe to see the track and all details</string>
+
+    <!-- Route detail stats -->
+    <string name="route_stat_distance">Distance</string>
+    <string name="route_stat_elevation">Elevation gain</string>
+    <string name="route_stat_time">Time</string>
+    <string name="route_stat_difficulty">Difficulty</string>
+    <string name="route_show_more_comments">Show more comments</string>
+
+    <!-- Paid route -->
+    <string name="paid_route">Paid route</string>
+    <string name="paid_route_subtitle">Available by subscription</string>
+    <string name="paid_route_subscribers_only">Available to subscribers only</string>
+    <string name="free_route_for_all">Available to everyone</string>
+    <string name="route_premium_badge">Premium</string>
+
+    <!-- Route Create extras -->
+    <string name="create_preview_description_label">Preview description (visible to everyone)</string>
+    <string name="create_preview_description_hint">Briefly describe the route for non-registered users…</string>
+    <string name="create_walking_time">~%s on foot</string>
+
+    <!-- Settings: Monetization -->
+    <string name="settings_monetization">Monetization</string>
+    <string name="settings_plan_price">Subscription price (₽/month)</string>
+    <string name="settings_plan_description">Subscription description</string>
+    <string name="settings_yookassa_id">YooKassa shop ID</string>
+    <string name="settings_accept_payments">Accept payments</string>
+    <string name="settings_subscription_active">Subscription active</string>
+    <string name="settings_subscription_inactive">Subscription disabled</string>
+    <string name="settings_saved">Settings saved</string>
+
+    <!-- User Profile extras -->
+    <string name="user_paid_content">Paid content</string>
 
     <!-- Report dialog -->
     <string name="report_title">Report</string>

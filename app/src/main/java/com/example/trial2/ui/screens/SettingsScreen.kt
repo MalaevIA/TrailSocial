@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -40,6 +41,10 @@ fun SettingsScreen(
     var showChangeEmailDialog by remember { mutableStateOf(false) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.planSaveSuccess) {
+        if (uiState.planSaveSuccess) vm.clearPlanSaveState()
+    }
 
     if (showChangeEmailDialog) {
         ChangeEmailDialog(
@@ -245,6 +250,73 @@ fun SettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
+            // ── Monetization section ──
+            SettingsSectionHeader(stringResource(R.string.settings_monetization))
+
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = uiState.planPrice,
+                    onValueChange = vm::onPlanPriceChange,
+                    label = { Text(stringResource(R.string.settings_plan_price)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = { Icon(Icons.Outlined.AttachMoney, contentDescription = null, tint = ForestGreen) }
+                )
+                OutlinedTextField(
+                    value = uiState.planDescription,
+                    onValueChange = vm::onPlanDescriptionChange,
+                    label = { Text(stringResource(R.string.settings_plan_description)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3
+                )
+                OutlinedTextField(
+                    value = uiState.planYookassaId,
+                    onValueChange = vm::onPlanYookassaIdChange,
+                    label = { Text(stringResource(R.string.settings_yookassa_id)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.settings_accept_payments), fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            if (uiState.planIsActive) stringResource(R.string.settings_subscription_active) else stringResource(R.string.settings_subscription_inactive),
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = uiState.planIsActive,
+                        onCheckedChange = vm::onPlanActiveChange,
+                        colors = SwitchDefaults.colors(checkedTrackColor = ForestGreen)
+                    )
+                }
+                if (uiState.planSaveError != null) {
+                    Text(uiState.planSaveError!!, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                }
+                if (uiState.planSaveSuccess) {
+                    Text(stringResource(R.string.settings_saved), color = ForestGreen, fontSize = 13.sp)
+                }
+                Button(
+                    onClick = vm::saveMyPlan,
+                    enabled = !uiState.isPlanLoading && uiState.planPrice.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+                ) {
+                    if (uiState.isPlanLoading) {
+                        CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.save))
+                    }
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
             // ── About section ──
             SettingsSectionHeader(stringResource(R.string.settings_about))
 
@@ -266,7 +338,7 @@ fun SettingsScreen(
                     )
                     Spacer(Modifier.width(16.dp))
                     Column {
-                        Text("Верста", fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.app_name), fontSize = 15.sp, fontWeight = FontWeight.Medium)
                         Text(stringResource(R.string.settings_version), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }

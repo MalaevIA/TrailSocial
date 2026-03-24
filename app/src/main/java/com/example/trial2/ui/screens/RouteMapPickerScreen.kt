@@ -250,9 +250,10 @@ fun RouteMapPickerScreen(
                 }
             },
             confirmButton = {
+                val defaultName = stringResource(R.string.map_picker_default_point_name, waypoints.size + 1)
                 TextButton(onClick = {
                     val pt = pendingPoint!!
-                    val name = pendingName.ifBlank { pendingSearchTitle ?: "Точка ${waypoints.size + 1}" }
+                    val name = pendingName.ifBlank { pendingSearchTitle ?: defaultName }
                     addWaypoint(pt, name, pendingDesc)
                     pendingPoint = null
                     pendingSearchTitle = null

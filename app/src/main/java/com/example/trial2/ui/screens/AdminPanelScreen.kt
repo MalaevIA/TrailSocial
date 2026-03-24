@@ -580,10 +580,11 @@ private fun ReportItem(
     }
 }
 
+@Composable
 private fun reportReasonLabel(reason: ReportReason): String = when (reason) {
-    ReportReason.SPAM -> "Спам"
-    ReportReason.HARASSMENT -> "Оскорбления"
-    ReportReason.INAPPROPRIATE -> "Неприемлемый контент"
-    ReportReason.MISINFORMATION -> "Дезинформация"
-    ReportReason.OTHER -> "Другое"
+    ReportReason.SPAM -> stringResource(R.string.report_reason_spam)
+    ReportReason.HARASSMENT -> stringResource(R.string.report_reason_harassment)
+    ReportReason.INAPPROPRIATE -> stringResource(R.string.report_reason_inappropriate)
+    ReportReason.MISINFORMATION -> stringResource(R.string.report_reason_misinformation)
+    ReportReason.OTHER -> stringResource(R.string.report_reason_other)
 }

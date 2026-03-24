@@ -1,12 +1,18 @@
 package com.trail2.ui.screens
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -15,6 +21,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +40,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.trail2.R
 import com.trail2.ai_route.*
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.trail2.ui.theme.ForestGreen
 import com.trail2.ui.theme.MossGreen
 
@@ -107,7 +124,7 @@ private fun GoalStep(form: RouteBuilderForm, vm: RouteBuilderViewModel) {
     StepScroll {
         if (history.isNotEmpty()) {
             Text(
-                "История генераций",
+                stringResource(R.string.builder_history),
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -526,46 +543,136 @@ private fun FormBottomBar(
 
 @Composable
 private fun LoadingScreen(pollCount: Int = 0) {
-    // Ожидаем ~15 запросов (30 сек / 2 сек интервал), максимум 95% до завершения
     val expectedPolls = 15
-    val progress = if (pollCount == 0) 0f
-                   else (pollCount.toFloat() / expectedPolls).coerceAtMost(0.95f)
-    val percent = (progress * 100).toInt()
+    val rawProgress = if (pollCount == 0) 0f
+                      else (pollCount.toFloat() / expectedPolls).coerceAtMost(0.95f)
+
+    val animatedProgress by animateFloatAsState(
+        targetValue = rawProgress,
+        animationSpec = tween(durationMillis = 800),
+        label = "loadingProgress"
+    )
+
+    val stages = listOf(
+        stringResource(R.string.builder_stage_analysis),
+        stringResource(R.string.builder_stage_generation),
+        stringResource(R.string.builder_stage_points),
+        stringResource(R.string.builder_stage_assembly)
+    )
+    val currentStage = (animatedProgress * stages.size).toInt().coerceIn(0, stages.lastIndex)
+
+    val infiniteTransition = rememberInfiniteTransition(label = "loaderAnim")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.22f,
+        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+        label = "pulse"
+    )
+
+    val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
+    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(horizontal = 32.dp)
         ) {
-            CircularProgressIndicator(modifier = Modifier.size(60.dp))
-            Spacer(Modifier.height(20.dp))
-            Text("🤖", fontSize = 36.sp)
-            Spacer(Modifier.height(8.dp))
-            Text(stringResource(R.string.builder_generating), fontSize = 18.sp, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.height(6.dp))
+            val lottieComposition by rememberLottieComposition(
+                LottieCompositionSpec.Asset("robot_loading.lottie")
+            )
+            val lottieProgress by animateLottieCompositionAsState(
+                lottieComposition,
+                iterations = LottieConstants.IterateForever
+            )
+            LottieAnimation(
+                composition = lottieComposition,
+                progress = { lottieProgress },
+                modifier = Modifier.size(160.dp)
+            )
+            Text(
+                stringResource(R.string.builder_generating),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(Modifier.height(4.dp))
             Text(
                 stringResource(R.string.builder_generating_wait),
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontSize = 13.sp,
+                color = onSurfaceVariantColor
             )
-            Spacer(Modifier.height(24.dp))
-            LinearProgressIndicator(
-                progress = { progress },
+            Spacer(Modifier.height(32.dp))
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(6.dp),
-                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "$percent%",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+                    .drawBehind {
+                    val r = 18.dp.toPx()
+                    val lineY = r
+                    val lineStart = r
+                    val lineEnd = size.width - r
+                    val progressEnd = if (currentStage > 0)
+                        lineStart + (lineEnd - lineStart) * (currentStage.toFloat() / stages.lastIndex)
+                    else lineStart
+
+                    drawLine(
+                        color = surfaceVariantColor,
+                        start = Offset(lineStart, lineY),
+                        end = Offset(lineEnd, lineY),
+                        strokeWidth = 2.dp.toPx(),
+                        cap = StrokeCap.Round
+                    )
+                    if (progressEnd > lineStart) {
+                        drawLine(
+                            color = ForestGreen,
+                            start = Offset(lineStart, lineY),
+                            end = Offset(progressEnd, lineY),
+                            strokeWidth = 2.dp.toPx(),
+                            cap = StrokeCap.Round
+                        )
+                    }
+                },
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            stages.forEachIndexed { index, label ->
+                val isCompleted = index < currentStage
+                val isActive = index == currentStage
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .scale(if (isActive) pulseScale else 1f)
+                            .clip(CircleShape)
+                            .background(
+                                when {
+                                    isCompleted || isActive -> ForestGreen
+                                    else -> surfaceVariantColor
+                                }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isCompleted) {
+                            Text("✓", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        } else {
+                            Text(
+                                "${index + 1}",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isActive) Color.White else onSurfaceVariantColor
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        label,
+                        fontSize = 10.sp,
+                        color = if (isCompleted || isActive) ForestGreen else onSurfaceVariantColor,
+                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal
+                    )
+                }
+            }
         }
-    }
+        } // Column
+    } // Box
 }
 
 // ── Экран ошибки ──────────────────────────────────────────────

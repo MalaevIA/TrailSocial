@@ -17,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -126,7 +128,7 @@ fun RouteCreateScreen(
                 ) {
                     Column {
                         Text(
-                            "${"%.2f".format(form.distanceKm ?: 0.0)} км · ${form.pointCount} точек",
+                            stringResource(R.string.create_map_info, form.distanceKm ?: 0.0, form.pointCount),
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -134,9 +136,9 @@ fun RouteCreateScreen(
                             val mins = form.durationMinutes.toIntOrNull() ?: 0
                             val hours = mins / 60
                             val remMins = mins % 60
-                            val timeText = if (hours > 0) "${hours} ч ${remMins} мин" else "$mins мин"
+                            val timeText = if (hours > 0) stringResource(R.string.time_hours_minutes, hours, remMins) else stringResource(R.string.time_minutes, mins)
                             Text(
-                                "~$timeText пешком",
+                                stringResource(R.string.create_walking_time, timeText),
                                 fontSize = 13.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -306,6 +308,46 @@ fun RouteCreateScreen(
                     }
                 }
             }
+
+            // ── Paid route ──
+            HorizontalDivider()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    if (form.isPaid) Icons.Outlined.Lock else Icons.Outlined.LockOpen,
+                    contentDescription = null,
+                    tint = if (form.isPaid) ForestGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.paid_route), fontWeight = FontWeight.Medium)
+                    Text(
+                        if (form.isPaid) stringResource(R.string.paid_route_subscribers_only) else stringResource(R.string.free_route_for_all),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = form.isPaid,
+                    onCheckedChange = vm::onIsPaidChange,
+                    colors = SwitchDefaults.colors(checkedTrackColor = ForestGreen)
+                )
+            }
+            if (form.isPaid) {
+                OutlinedTextField(
+                    value = form.previewDescription,
+                    onValueChange = vm::onPreviewDescriptionChange,
+                    label = { Text(stringResource(R.string.create_preview_description_label)) },
+                    placeholder = { Text(stringResource(R.string.create_preview_description_hint)) },
+                    minLines = 2,
+                    maxLines = 4,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            HorizontalDivider()
 
             // ── Error ──
             if (uiState.error != null) {

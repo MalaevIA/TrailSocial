@@ -13,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -31,9 +32,11 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import com.trail2.R
 import com.trail2.ui.theme.*
 import com.trail2.ui.util.RoutePhotoPlaceholder
 import com.trail2.ui.util.formatDate
@@ -58,11 +61,17 @@ fun RouteCard(
             else null
         }
     }
+    val isLocked = route.isPaid && route.isLocked
+    val cardBorder = if (isLocked)
+        BorderStroke(1.5.dp, Color(0xFFE9C46A).copy(alpha = 0.8f))
+    else null
+
     Card(
         modifier = modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = cardBorder
     ) {
         Column {
             // Header
@@ -73,7 +82,21 @@ fun RouteCard(
                 UserAvatar(avatarUrl = route.author.avatarUrl, name = route.author.name, size = 38)
                 Spacer(Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(route.author.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(route.author.name, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        if (route.isPaid) {
+                            Surface(shape = RoundedCornerShape(4.dp), color = Color(0xFFE9C46A)) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Icon(Icons.Filled.Star, null, modifier = Modifier.size(9.dp), tint = Color(0xFF774936))
+                                    Text(stringResource(R.string.route_premium_badge), fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF774936))
+                                }
+                            }
+                        }
+                    }
                     Text(route.region, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(formatDate(route.createdAt), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -81,69 +104,81 @@ fun RouteCard(
 
             // Photo banner
             Box(modifier = Modifier.fillMaxWidth().height(200.dp)) {
+                val photoModifier = if (isLocked) Modifier.fillMaxSize().blur(18.dp) else Modifier.fillMaxSize()
                 if (route.photos.isEmpty()) {
-                    // No photos — lightweight Canvas preview (never use MapView inside LazyColumn)
-                    RouteMapPreview(geometry = effectiveGeometry, modifier = Modifier.fillMaxSize())
+                    RouteMapPreview(geometry = effectiveGeometry, modifier = photoModifier)
                 } else if (route.photos.size == 1) {
-                    // Single photo with map fallback on error
                     val photoUrl = routePhotoUrl(route.photos[0])
                     var failed by remember(route.id, photoUrl) { mutableStateOf(false) }
                     if (failed) {
-                        RouteMapPreview(geometry = effectiveGeometry, modifier = Modifier.fillMaxSize())
+                        RouteMapPreview(geometry = effectiveGeometry, modifier = photoModifier)
                     } else {
                         RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
                         AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(photoUrl)
-                                .crossfade(true)
-                                .build(),
+                            model = ImageRequest.Builder(LocalContext.current).data(photoUrl).crossfade(true).build(),
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = photoModifier,
                             onError = { failed = true }
                         )
                     }
                 } else {
-                    // Multiple photos — swipeable carousel with map fallback on error
                     var anyFailed by remember(route.id, route.photos) { mutableStateOf(false) }
                     val pagerState = rememberPagerState { route.photos.size }
                     if (anyFailed) {
-                        RouteMapPreview(geometry = effectiveGeometry, modifier = Modifier.fillMaxSize())
+                        RouteMapPreview(geometry = effectiveGeometry, modifier = photoModifier)
                     } else {
                         HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
                             Box(modifier = Modifier.fillMaxSize()) {
                                 RoutePhotoPlaceholder(modifier = Modifier.fillMaxSize())
                                 AsyncImage(
-                                    model = ImageRequest.Builder(LocalContext.current)
-                                        .data(routePhotoUrl(route.photos[page]))
-                                        .crossfade(true)
-                                        .build(),
+                                    model = ImageRequest.Builder(LocalContext.current).data(routePhotoUrl(route.photos[page])).crossfade(true).build(),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize(),
+                                    modifier = if (isLocked) Modifier.fillMaxSize().blur(18.dp) else Modifier.fillMaxSize(),
                                     onError = { anyFailed = true }
                                 )
                             }
                         }
-                        // Dot indicators
-                        Row(
-                            modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            route.photos.indices.forEach { i ->
-                                val isSelected = pagerState.currentPage == i
-                                Box(
-                                    modifier = Modifier
-                                        .size(if (isSelected) 8.dp else 6.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isSelected) Color.White else Color.White.copy(0.5f))
-                                )
+                        if (!isLocked) {
+                            Row(
+                                modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                route.photos.indices.forEach { i ->
+                                    val isSelected = pagerState.currentPage == i
+                                    Box(modifier = Modifier.size(if (isSelected) 8.dp else 6.dp).clip(CircleShape).background(if (isSelected) Color.White else Color.White.copy(0.5f)))
+                                }
                             }
                         }
                     }
                 }
-                Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(0f to Color.Transparent, 1f to Color.Black.copy(alpha = 0.5f))))
-                DifficultyBadge(difficulty = route.difficulty, modifier = Modifier.align(Alignment.TopEnd).padding(10.dp))
+
+                // Gradient overlay
+                Box(modifier = Modifier.fillMaxSize().background(
+                    if (isLocked)
+                        Brush.verticalGradient(0f to Color.Black.copy(0.3f), 1f to Color.Black.copy(0.7f))
+                    else
+                        Brush.verticalGradient(0f to Color.Transparent, 1f to Color.Black.copy(0.5f))
+                ))
+
+                if (isLocked) {
+                    // Lock overlay
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Surface(shape = CircleShape, color = Color(0xFFE9C46A)) {
+                            Icon(Icons.Outlined.Lock, null, modifier = Modifier.padding(12.dp).size(26.dp), tint = Color(0xFF774936))
+                        }
+                        Text(stringResource(R.string.paid_route), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(stringResource(R.string.paid_route_subtitle), color = Color.White.copy(0.8f), fontSize = 12.sp)
+                    }
+                } else {
+                    DifficultyBadge(difficulty = route.difficulty, modifier = Modifier.align(Alignment.TopEnd).padding(10.dp))
+                }
+
                 Column(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)) {
                     Text(route.title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Spacer(Modifier.height(4.dp))
@@ -166,48 +201,80 @@ fun RouteCard(
                 RouteStatItem("💪", difficultyShortLabel(route.difficulty))
             }
 
-            // Description
+            // Description / preview
+            val displayText = if (isLocked && !route.previewDescription.isNullOrBlank())
+                route.previewDescription
+            else if (isLocked)
+                stringResource(R.string.route_locked_access_hint)
+            else
+                route.description
             Text(
-                text = route.description,
+                text = displayText,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                color = if (isLocked) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
             )
 
-            // Tags
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                route.tags.forEach { TagChip(it) }
+            if (!isLocked) {
+                // Tags
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    route.tags.forEach { TagChip(it) }
+                }
+                Spacer(Modifier.height(8.dp))
             }
 
-            Spacer(Modifier.height(8.dp))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
-            // Action bar
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                ActionButton(
-                    icon = if (route.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                    tint = if (route.isLiked) Color(0xFFE63946) else MaterialTheme.colorScheme.onSurfaceVariant,
-                    label = formatCount(route.likesCount),
-                    onClick = onLikeClick
-                )
-                ActionButton(Icons.Outlined.ChatBubbleOutline, MaterialTheme.colorScheme.onSurfaceVariant, formatCount(route.commentsCount)) { onClick() }
-                ActionButton(Icons.Outlined.Share, MaterialTheme.colorScheme.onSurfaceVariant, "Поделиться") {}
-                ActionButton(
-                    icon = if (route.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                    tint = if (route.isSaved) ForestGreen else MaterialTheme.colorScheme.onSurfaceVariant,
-                    label = if (route.isSaved) "Сохранено" else "Сохранить",
-                    onClick = onSaveClick
-                )
+            if (isLocked) {
+                // Subscribe CTA
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFE9C46A).copy(alpha = 0.12f))
+                        .clickable { onClick() }
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Outlined.Star, null, tint = Color(0xFFE9C46A), modifier = Modifier.size(18.dp))
+                    Text(
+                        stringResource(R.string.subscription_subscribe_to_author),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF774936),
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(Icons.Outlined.ChevronRight, null, tint = Color(0xFF774936), modifier = Modifier.size(18.dp))
+                }
+            } else {
+                // Normal action bar
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ActionButton(
+                        icon = if (route.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        tint = if (route.isLiked) Color(0xFFE63946) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        label = formatCount(route.likesCount),
+                        onClick = onLikeClick
+                    )
+                    ActionButton(Icons.Outlined.ChatBubbleOutline, MaterialTheme.colorScheme.onSurfaceVariant, formatCount(route.commentsCount)) { onClick() }
+                    ActionButton(Icons.Outlined.Share, MaterialTheme.colorScheme.onSurfaceVariant, stringResource(R.string.share)) {}
+                    ActionButton(
+                        icon = if (route.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        tint = if (route.isSaved) ForestGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                        label = if (route.isSaved) stringResource(R.string.saved) else stringResource(R.string.save),
+                        onClick = onSaveClick
+                    )
+                }
             }
         }
     }
@@ -242,10 +309,10 @@ fun UserAvatar(avatarUrl: String, name: String, size: Int) {
 @Composable
 fun DifficultyBadge(difficulty: Difficulty, modifier: Modifier = Modifier) {
     val (label, color) = when (difficulty) {
-        Difficulty.EASY -> "Лёгкий" to Color(0xFF52B788)
-        Difficulty.MODERATE -> "Средний" to Color(0xFFE9C46A)
-        Difficulty.HARD -> "Сложный" to Color(0xFFE76F51)
-        Difficulty.EXPERT -> "Эксперт" to Color(0xFFE63946)
+        Difficulty.EASY -> stringResource(R.string.difficulty_easy) to Color(0xFF52B788)
+        Difficulty.MODERATE -> stringResource(R.string.difficulty_medium) to Color(0xFFE9C46A)
+        Difficulty.HARD -> stringResource(R.string.difficulty_hard) to Color(0xFFE76F51)
+        Difficulty.EXPERT -> stringResource(R.string.difficulty_expert_short) to Color(0xFFE63946)
     }
     Surface(modifier = modifier, shape = RoundedCornerShape(20.dp), color = color.copy(alpha = 0.9f)) {
         Text(label, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
@@ -276,17 +343,19 @@ fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, tint: Co
     }
 }
 
+@Composable
 fun formatDurationMinutes(minutes: Int): String = when {
-    minutes < 60 -> "${minutes} мин"
-    minutes < 1440 -> "${minutes / 60} ч"
-    else -> "${minutes / 1440} дн"
+    minutes < 60 -> stringResource(R.string.time_minutes, minutes)
+    minutes < 1440 -> stringResource(R.string.time_hours, minutes / 60)
+    else -> stringResource(R.string.time_days, minutes / 1440)
 }
 
+@Composable
 fun difficultyShortLabel(d: Difficulty): String = when (d) {
-    Difficulty.EASY -> "Лёгкий"
-    Difficulty.MODERATE -> "Средний"
-    Difficulty.HARD -> "Сложный"
-    Difficulty.EXPERT -> "Эксперт"
+    Difficulty.EASY -> stringResource(R.string.difficulty_easy)
+    Difficulty.MODERATE -> stringResource(R.string.difficulty_medium)
+    Difficulty.HARD -> stringResource(R.string.difficulty_hard)
+    Difficulty.EXPERT -> stringResource(R.string.difficulty_expert_short)
 }
 
 fun formatCount(count: Int): String = if (count >= 1000) "${count / 1000}.${(count % 1000) / 100}к" else count.toString()

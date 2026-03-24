@@ -34,6 +34,7 @@
     <string name="time_minutes">%d мин</string>
     <string name="time_hours">%d ч</string>
     <string name="time_hours_minutes">%d ч %d мин</string>
+    <string name="time_days">%d дн</string>
 
     <!-- Feed screen -->
     <string name="feed_title">Верста</string>
@@ -190,6 +191,7 @@
     <string name="notification_route_like">%1$s оценил маршрут \"%2$s\"</string>
     <string name="notification_new_comment">%1$s: %2$s</string>
     <string name="notification_new_route">%1$s опубликовал(а) маршрут \"%2$s\"</string>
+    <string name="notification_new_paid_subscriber">%s оформил платную подписку</string>
 
     <!-- Settings screen -->
     <string name="settings_title">Настройки</string>
@@ -221,6 +223,7 @@
     <string name="map_picker_point_desc_hint">Что интересного в этой точке</string>
     <string name="map_picker_no_results">Ничего не найдено</string>
     <string name="map_picker_waypoints">Точки маршрута</string>
+    <string name="map_picker_default_point_name">Точка %d</string>
 
     <!-- Login screen -->
     <string name="login_title">Верста</string>
@@ -242,6 +245,12 @@
     <string name="welcome_terms">Нажимая «Начать», вы соглашаетесь с Условиями использования и Политикой конфиденциальности</string>
 
     <!-- Onboarding: City -->
+    <plurals name="city_plural">
+        <item quantity="one">город</item>
+        <item quantity="few">города</item>
+        <item quantity="many">городов</item>
+        <item quantity="other">городов</item>
+    </plurals>
     <string name="city_title">Где хотите гулять?</string>
     <string name="city_subtitle">Выберите один или несколько городов — подберём маршруты поблизости</string>
     <string name="city_selected">Выбрано: %1$d %2$s</string>
@@ -325,6 +334,76 @@
     <string name="admin_delete_admin">Удалить (админ)</string>
     <string name="admin_delete_comment_admin">Удалить комментарий (админ)</string>
     <string name="settings_admin">Админ-панель</string>
+
+    <!-- Feed screen extras -->
+    <string name="feed_offline">Офлайн — показаны сохранённые маршруты</string>
+
+    <!-- Explore screen extras -->
+    <string name="explore_all_regions">Все регионы</string>
+    <string name="explore_easy_routes">Лёгкие маршруты</string>
+    <string name="explore_moderate_routes">Средние маршруты</string>
+    <string name="explore_hard_routes">Сложные маршруты</string>
+    <string name="explore_expert_routes">Экспертные маршруты</string>
+
+    <!-- Route Builder extras -->
+    <string name="builder_history">История генераций</string>
+    <string name="builder_stage_analysis">Анализ</string>
+    <string name="builder_stage_generation">Генерация</string>
+    <string name="builder_stage_points">Точки</string>
+    <string name="builder_stage_assembly">Сборка</string>
+
+    <!-- Route Card extras -->
+    <string name="route_locked_access_hint">Оформите подписку на автора, чтобы получить доступ к полному маршруту.</string>
+    <string name="subscription_subscribe_to_author">Подписаться на автора</string>
+    <string name="saved">Сохранено</string>
+
+    <!-- Subscription / Payment -->
+    <string name="subscription_title">Подписка на автора</string>
+    <string name="subscription_description_default">Доступ ко всем платным маршрутам автора</string>
+    <string name="subscription_price_label">Стоимость</string>
+    <string name="subscription_per_month">/мес</string>
+    <string name="subscription_purchase">Оформить подписку</string>
+    <string name="subscription_purchase_for_price">Оформить подписку за %1$s %2$s/мес</string>
+    <string name="subscription_subscribe_for">Подписаться за %s ₽/мес</string>
+    <string name="subscription_price_month">%s ₽ / месяц</string>
+    <string name="subscription_payment_subtitle">Доступ к платным маршрутам</string>
+    <string name="subscription_locked_description">Полное описание доступно по подписке</string>
+
+    <!-- Route locked by subscription -->
+    <string name="route_locked_title">Маршрут доступен по подписке</string>
+    <string name="route_locked_subtitle">Оформите подписку, чтобы увидеть трек и все детали</string>
+
+    <!-- Route detail stats -->
+    <string name="route_stat_distance">Дистанция</string>
+    <string name="route_stat_elevation">Набор высоты</string>
+    <string name="route_stat_time">Время</string>
+    <string name="route_stat_difficulty">Сложность</string>
+    <string name="route_show_more_comments">Показать ещё комментарии</string>
+
+    <!-- Paid route -->
+    <string name="paid_route">Платный маршрут</string>
+    <string name="paid_route_subtitle">Доступно по подписке</string>
+    <string name="paid_route_subscribers_only">Доступен только подписчикам</string>
+    <string name="free_route_for_all">Доступен всем</string>
+    <string name="route_premium_badge">Premium</string>
+
+    <!-- Route Create extras -->
+    <string name="create_preview_description_label">Превью-описание (видят все)</string>
+    <string name="create_preview_description_hint">Кратко опишите маршрут для незарегистрированных пользователей…</string>
+    <string name="create_walking_time">~%s пешком</string>
+
+    <!-- Settings: Monetization -->
+    <string name="settings_monetization">Монетизация</string>
+    <string name="settings_plan_price">Цена подписки (₽/месяц)</string>
+    <string name="settings_plan_description">Описание подписки</string>
+    <string name="settings_yookassa_id">ID магазина ЮКасса</string>
+    <string name="settings_accept_payments">Принимать платежи</string>
+    <string name="settings_subscription_active">Подписка активна</string>
+    <string name="settings_subscription_inactive">Подписка отключена</string>
+    <string name="settings_saved">Настройки сохранены</string>
+
+    <!-- User Profile extras -->
+    <string name="user_paid_content">Платный контент</string>
 
     <!-- Report dialog -->
     <string name="report_title">Пожаловаться</string>

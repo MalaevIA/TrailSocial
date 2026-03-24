@@ -1,9 +1,11 @@
 package com.trail2.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -13,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.res.stringResource
@@ -25,7 +28,18 @@ import com.trail2.FollowListType
 import com.trail2.ui.components.ReportDialog
 import com.trail2.ui.components.UserAvatar
 import com.trail2.ui.components.UserProfileSkeleton
+import com.trail2.BuildConfig
+import com.trail2.ui.theme.ForestGreen
+import com.trail2.ui.theme.MossGreen
+import com.trail2.ui.util.YooKassaContract
 import com.trail2.ui.viewmodels.UserProfileViewModel
+import ru.yoomoney.sdk.kassa.payments.Checkout
+import ru.yoomoney.sdk.kassa.payments.TokenizationResult
+import ru.yoomoney.sdk.kassa.payments.checkoutParameters.Amount
+import ru.yoomoney.sdk.kassa.payments.checkoutParameters.PaymentParameters
+import ru.yoomoney.sdk.kassa.payments.checkoutParameters.PaymentMethodType
+import ru.yoomoney.sdk.kassa.payments.checkoutParameters.SavePaymentMethod
+import java.util.Currency
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +56,17 @@ fun UserProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val reportSentText = stringResource(R.string.report_sent)
     val reportAlreadySentText = stringResource(R.string.report_already_sent)
+    val context = LocalContext.current
+
+    val yooKassaLauncher = rememberLauncherForActivityResult(YooKassaContract()) { result: TokenizationResult? ->
+        result?.paymentToken?.let { vm.confirmPayment(it) }
+    }
+
+    val threeDsLauncher = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) {
+        vm.verifyPayment()
+    }
 
     LaunchedEffect(userId) { vm.loadUser(userId) }
 
@@ -55,6 +80,82 @@ fun UserProfileScreen(
         if (uiState.reportError == "already_sent") {
             snackbarHostState.showSnackbar(reportAlreadySentText)
             vm.clearReportState()
+        }
+    }
+
+    LaunchedEffect(uiState.paymentConfirmationUrl) {
+        val url = uiState.paymentConfirmationUrl ?: return@LaunchedEffect
+        threeDsLauncher.launch(ru.yoomoney.sdk.kassa.payments.Checkout.create3dsIntent(context, url))
+        vm.clearConfirmationUrl()
+    }
+
+    if (uiState.showPaymentSheet) {
+        val plan = uiState.creatorPlan
+        ModalBottomSheet(onDismissRequest = vm::hidePaymentSheet) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(Icons.Outlined.Star, contentDescription = null, tint = ForestGreen, modifier = Modifier.size(40.dp))
+                Text(stringResource(R.string.subscription_title), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                if (plan != null) {
+                    Text(
+                        stringResource(R.string.subscription_price_month, plan.price),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ForestGreen
+                    )
+                    if (plan.description.isNotBlank()) {
+                        Text(
+                            plan.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                if (uiState.paymentConfirmError != null) {
+                    Text(uiState.paymentConfirmError!!, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
+                }
+                val subscriptionTitleStr = stringResource(R.string.subscription_title)
+                val subscriptionSubtitleStr = stringResource(R.string.subscription_payment_subtitle)
+                Button(
+                    onClick = {
+                        val p = plan ?: return@Button
+                        val price = p.price.toBigDecimalOrNull() ?: return@Button
+                        val paymentIntent = Checkout.createTokenizeIntent(
+                            context,
+                            PaymentParameters(
+                                amount = Amount(price, Currency.getInstance("RUB")),
+                                title = subscriptionTitleStr,
+                                subtitle = p.description.ifBlank { subscriptionSubtitleStr },
+                                clientApplicationKey = BuildConfig.YOOKASSA_CLIENT_KEY,
+                                shopId = BuildConfig.YOOKASSA_SHOP_ID,
+                                savePaymentMethod = SavePaymentMethod.OFF,
+                                paymentMethodTypes = setOf(PaymentMethodType.BANK_CARD)
+                            )
+                        )
+                        vm.hidePaymentSheet()
+                        yooKassaLauncher.launch(paymentIntent)
+                    },
+                    enabled = !uiState.isConfirmingPayment,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+                ) {
+                    if (uiState.isConfirmingPayment) {
+                        CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.subscription_purchase))
+                    }
+                }
+                OutlinedButton(onClick = vm::hidePaymentSheet, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.cancel))
+                }
+                Spacer(Modifier.height(16.dp))
+            }
         }
     }
 
@@ -76,15 +177,20 @@ fun UserProfileScreen(
             )
         }
     ) { padding ->
-        if (uiState.isLoading) {
+        if (uiState.isLoading && uiState.user == null) {
             UserProfileSkeleton()
             return@Scaffold
         }
 
         val user = uiState.user ?: return@Scaffold
 
-        LazyColumn(
+        PullToRefreshBox(
             modifier = Modifier.fillMaxSize().padding(padding),
+            isRefreshing = uiState.isLoading,
+            onRefresh = { vm.loadUser(userId) }
+        ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -92,7 +198,26 @@ fun UserProfileScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     UserAvatar(avatarUrl = user.avatarUrl, name = user.name, size = 80)
                     Spacer(Modifier.height(8.dp))
-                    Text(user.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(user.name, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        if (uiState.creatorPlan != null) {
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = ForestGreen
+                            ) {
+                                Text(
+                                    stringResource(R.string.user_paid_content),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    fontSize = 10.sp,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
                     Text("@${user.username}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (user.bio.isNotBlank()) {
                         Spacer(Modifier.height(4.dp))
@@ -131,6 +256,20 @@ fun UserProfileScreen(
                         modifier = Modifier.fillMaxWidth(0.6f)
                     ) {
                         Text(if (user.isFollowing) stringResource(R.string.route_unsubscribe) else stringResource(R.string.route_subscribe))
+                    }
+
+                    val plan = uiState.creatorPlan
+                    if (plan != null && user.id != uiState.currentUserId) {
+                        Spacer(Modifier.height(4.dp))
+                        Button(
+                            onClick = vm::showPaymentSheet,
+                            modifier = Modifier.fillMaxWidth(0.8f),
+                            colors = ButtonDefaults.buttonColors(containerColor = ForestGreen)
+                        ) {
+                            Icon(Icons.Outlined.Star, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text(stringResource(R.string.subscription_subscribe_for, plan.price))
+                        }
                     }
 
                     // Admin: ban/unban
@@ -194,6 +333,7 @@ fun UserProfileScreen(
                 }
             }
         }
+        } // end PullToRefreshBox
     }
 
     if (showReportDialog) {

@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -290,8 +291,5 @@ private fun SuggestItem(
     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 }
 
-private fun pluralCity(n: Int): String = when {
-    n % 10 == 1 && n % 100 != 11 -> "город"
-    n % 10 in 2..4 && n % 100 !in 12..14 -> "города"
-    else -> "городов"
-}
+@Composable
+private fun pluralCity(n: Int): String = pluralStringResource(R.plurals.city_plural, n)
